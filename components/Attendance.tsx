@@ -28,14 +28,34 @@ type AttendanceMatrix = Record<string, Record<number, AttendanceStatus>>;
 
 const COURSES = [
   "B.A English",
-  "B.Com Co-operation",
-  "B.Com Computer Application",
+  "B.Com CA",
+  "B.Com Co-op",
   "BBA Finance",
 ];
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const HOURS = [1, 2, 3, 4, 5];
+
+/* =========================================================
+   NORMALIZE COURSE
+
+   Handles:
+   B.Com Co-operation
+   b.com co-operation
+   B.Com  Co-operation
+   B.Com Co-Operation
+
+   as the same course.
+========================================================= */
+
+function normalizeCourse(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[–—]/g, "-");
+}
 
 /* =========================================================
    SEMESTER
@@ -146,22 +166,29 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
     try {
       const selectedSemester = toSemesterNumber(semester);
 
+      const selectedCourse = normalizeCourse(course);
+
       /* =====================================================
          STUDENTS
+
+         IMPORTANT FIX:
+         DO NOT use .eq("course", course)
+
+         We fetch students and normalize the course
+         in JavaScript.
       ===================================================== */
 
       const { data: studentData, error: studentError } = await supabase
         .from("students")
         .select(
           `
-          id,
-          name,
-          admission_no,
-          course,
-          semester
-        `,
+            id,
+            name,
+            admission_no,
+            course,
+            semester
+          `,
         )
-        .eq("course", course)
         .order("name", {
           ascending: true,
         });
@@ -173,7 +200,14 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
       const filtered: Student[] = (studentData ?? [])
         .filter((student) => {
           try {
-            return toSemesterNumber(student.semester) === selectedSemester;
+            const studentSemester = toSemesterNumber(student.semester);
+
+            const studentCourse = normalizeCourse(student.course);
+
+            return (
+              studentSemester === selectedSemester &&
+              studentCourse === selectedCourse
+            );
           } catch {
             return false;
           }
@@ -185,7 +219,7 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
           admission_no: student.admission_no ?? "",
 
-          course: student.course,
+          course: student.course ?? course,
 
           semester: toSemesterNumber(student.semester),
         }));
@@ -203,18 +237,22 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
       /* =====================================================
          SESSIONS
+
+         IMPORTANT:
+         Keep the SAME normalized course value used when
+         creating sessions.
       ===================================================== */
 
       const { data: sessions, error: sessionError } = await supabase
         .from("attendance_sessions")
         .select(
           `
-          id,
-          attendance_date,
-          course,
-          semester,
-          hour
-        `,
+            id,
+            attendance_date,
+            course,
+            semester,
+            hour
+          `,
         )
         .eq("attendance_date", date)
         .eq("course", course)
@@ -225,7 +263,7 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
         throw sessionError;
       }
 
-      if (!sessions?.length) {
+      if (!sessions || sessions.length === 0) {
         setMatrix(empty);
         return;
       }
@@ -240,10 +278,10 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
         .from("attendance_records")
         .select(
           `
-          session_id,
-          student_id,
-          status
-        `,
+            session_id,
+            student_id,
+            status
+          `,
         )
         .in("session_id", sessionIds);
 
@@ -437,19 +475,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
   /* =========================================================
      SAVE HOUR
-
-     IMPORTANT FIX
-
-     OLD:
-       .upsert(records)
-
-     NEW:
-       - INSERT if record doesn't exist
-       - UPDATE only if record already exists
-
-     Therefore:
-       attendance.mark -> INSERT
-       attendance.edit -> UPDATE
   ========================================================= */
 
   async function saveHour(hour: number, userId: string) {
@@ -537,7 +562,7 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
     });
 
     /* =====================================================
-       CHECK EXISTING RECORDS
+       EXISTING RECORDS
     ===================================================== */
 
     const { data: existingRecords, error: existingRecordsError } =
@@ -566,7 +591,7 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
     });
 
     /* =====================================================
-       SEPARATE INSERT / UPDATE
+       INSERT NEW RECORDS
     ===================================================== */
 
     const recordsToInsert = records.filter(
@@ -576,13 +601,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
     const recordsToUpdate = records.filter((record) =>
       existingMap.has(record.student_id),
     );
-
-    /* =====================================================
-       INSERT NEW RECORDS
-
-       This requires:
-         attendance.mark
-    ===================================================== */
 
     if (recordsToInsert.length > 0) {
       const { error: insertError } = await supabase
@@ -596,12 +614,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
     /* =====================================================
        UPDATE EXISTING RECORDS
-
-       This requires:
-         attendance.edit
-
-       We deliberately DON'T silently update
-       existing records with attendance.mark.
     ===================================================== */
 
     if (recordsToUpdate.length > 0) {
@@ -757,10 +769,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
     <div className="attendanceMatrix">
       <BackToDashboard onBack={onBack} />
 
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
       <header className="attendanceMatrixHeader">
         <div>
           <div className="attendanceMatrixEyebrow">
@@ -783,10 +791,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       </header>
-
-      {/* =====================================================
-          ALERT
-      ===================================================== */}
 
       {error && (
         <div className="attendanceMatrixAlert error">
@@ -811,10 +815,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       )}
-
-      {/* =====================================================
-          FILTERS
-      ===================================================== */}
 
       <section className="attendanceMatrixFilters">
         <label>
@@ -865,10 +865,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
         </div>
       </section>
 
-      {/* =====================================================
-          SUMMARY
-      ===================================================== */}
-
       <section className="attendanceMatrixSummary">
         <div>
           <span>TOTAL STUDENTS</span>
@@ -908,10 +904,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
         </div>
       </section>
 
-      {/* =====================================================
-          MAIN CARD
-      ===================================================== */}
-
       <section className="attendanceMatrixCard">
         <div className="attendanceMatrixCardHeader">
           <div>
@@ -937,10 +929,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* ===================================================
-            LOADING
-        =================================================== */}
-
         {loading ? (
           <div className="attendanceMatrixLoading">
             <div />
@@ -959,10 +947,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
           </div>
         ) : (
           <>
-            {/* =================================================
-                MOBILE
-            ================================================= */}
-
             <div className="attendanceMobileOnly">
               <div className="attendanceMobileHourTabs">
                 {HOURS.map((hour) => {
@@ -1101,10 +1085,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
               </div>
             </div>
 
-            {/* =================================================
-                DESKTOP
-            ================================================= */}
-
             <div className="attendanceMatrixScroll">
               <table className="attendanceMatrixTable">
                 <thead>
@@ -1217,10 +1197,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
           </>
         )}
 
-        {/* ===================================================
-            FOOTER
-        =================================================== */}
-
         <div className="attendanceDesktopFooter">
           <div className="attendanceMatrixLegend">
             <div>
@@ -1250,10 +1226,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       </section>
-
-      {/* =====================================================
-          MOBILE LAYOUT FIX
-      ===================================================== */}
 
       <style jsx global>{`
         .rcAttendanceStudentList {
