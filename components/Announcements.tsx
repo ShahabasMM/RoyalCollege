@@ -15,6 +15,9 @@ type Announcement = {
   category: string;
   priority: string;
   published: boolean;
+  audience_type: "all" | "course_semester";
+  target_course: string | null;
+  target_semester: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -29,11 +32,7 @@ const CATEGORIES = [
   "Important",
 ];
 
-const PRIORITIES = [
-  "Normal",
-  "Important",
-  "Urgent",
-];
+const PRIORITIES = ["Normal", "Important", "Urgent"];
 
 export default function Announcements({
   onBack,
@@ -42,47 +41,45 @@ export default function Announcements({
   onBack: () => void;
   user: AppUser;
 }) {
-  const [announcements, setAnnouncements] =
-    useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [saving, setSaving] =
-    useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
-  const [filter, setFilter] =
-    useState("All");
+  const [filter, setFilter] = useState("All");
 
-  const [showModal, setShowModal] =
-    useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  const [editingId, setEditingId] =
-    useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [title, setTitle] =
-    useState("");
+  const [title, setTitle] = useState("");
 
-  const [description, setDescription] =
-    useState("");
+  const [description, setDescription] = useState("");
 
-  const [category, setCategory] =
-    useState("General");
+  const [category, setCategory] = useState("General");
 
-  const [priority, setPriority] =
-    useState("Normal");
+  const [priority, setPriority] = useState("Normal");
 
-  const [published, setPublished] =
-    useState(true);
+  const [published, setPublished] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [audienceType, setAudienceType] = useState<"all" | "course_semester">(
+    "all",
+  );
 
-  const [success, setSuccess] =
-    useState("");
+  const [targetCourse, setTargetCourse] = useState("");
+
+  const [targetSemester, setTargetSemester] = useState<number | "">("");
+
+  const [courses, setCourses] = useState<string[]>([]);
+
+  const [semesters, setSemesters] = useState<number[]>([]);
+
+  const [error, setError] = useState("");
+
+  const [success, setSuccess] = useState("");
 
   /* ============================================================
      LOAD ANNOUNCEMENTS
@@ -93,10 +90,7 @@ export default function Announcements({
     setError("");
 
     try {
-      const {
-        data,
-        error,
-      } = await supabase
+      const { data, error } = await supabase
         .from("announcements")
         .select(
           `
@@ -106,41 +100,66 @@ export default function Announcements({
             category,
             priority,
             published,
+            audience_type,
+            target_course,
+            target_semester,
             created_at,
             updated_at
-          `
+          `,
         )
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        );
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (error) {
         throw error;
       }
 
-      setAnnouncements(
-        (data || []) as Announcement[]
-      );
+      setAnnouncements((data || []) as Announcement[]);
     } catch (err: any) {
-      console.error(
-        "ANNOUNCEMENTS LOAD ERROR:",
-        err
-      );
+      console.error("ANNOUNCEMENTS LOAD ERROR:", err);
 
-      setError(
-        err?.message ||
-          "Unable to load announcements."
-      );
+      setError(err?.message || "Unable to load announcements.");
     } finally {
       setLoading(false);
     }
   }
 
+  async function loadAudienceOptions() {
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("course, semester");
+
+      if (error) throw error;
+
+      const uniqueCourses = Array.from(
+        new Set(
+          (data || [])
+            .map((row: any) => String(row.course ?? "").trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b));
+
+      const uniqueSemesters = Array.from(
+        new Set(
+          (data || [])
+            .map((row: any) => Number(row.semester))
+            .filter((value) => Number.isFinite(value) && value > 0),
+        ),
+      ).sort((a, b) => a - b);
+
+      setCourses(uniqueCourses);
+      setSemesters(uniqueSemesters);
+    } catch (err: any) {
+      console.error("AUDIENCE OPTIONS LOAD ERROR:", err);
+      setError(err?.message || "Unable to load course and semester options.");
+    }
+  }
+
   useEffect(() => {
     loadAnnouncements();
+    loadAudienceOptions();
   }, []);
 
   /* ============================================================
@@ -154,6 +173,9 @@ export default function Announcements({
     setCategory("General");
     setPriority("Normal");
     setPublished(true);
+    setAudienceType("all");
+    setTargetCourse("");
+    setTargetSemester("");
   }
 
   /* ============================================================
@@ -174,33 +196,25 @@ export default function Announcements({
      EDIT
   ============================================================ */
 
-  function openEdit(
-    announcement: Announcement
-  ) {
+  function openEdit(announcement: Announcement) {
     if (!hasPermission(user, "announcements.edit")) return;
-    setEditingId(
-      announcement.id
-    );
+    setEditingId(announcement.id);
 
-    setTitle(
-      announcement.title
-    );
+    setTitle(announcement.title);
 
-    setDescription(
-      announcement.description
-    );
+    setDescription(announcement.description);
 
-    setCategory(
-      announcement.category
-    );
+    setCategory(announcement.category);
 
-    setPriority(
-      announcement.priority
-    );
+    setPriority(announcement.priority);
 
-    setPublished(
-      announcement.published
-    );
+    setPublished(announcement.published);
+
+    setAudienceType(announcement.audience_type || "all");
+
+    setTargetCourse(announcement.target_course || "");
+
+    setTargetSemester(announcement.target_semester ?? "");
 
     setError("");
     setSuccess("");
@@ -223,12 +237,12 @@ export default function Announcements({
      SAVE
   ============================================================ */
 
-  async function saveAnnouncement(
-    event: React.FormEvent
-  ) {
+  async function saveAnnouncement(event: React.FormEvent) {
     event.preventDefault();
 
-    const requiredPermission = editingId ? "announcements.edit" : "announcements.create";
+    const requiredPermission = editingId
+      ? "announcements.edit"
+      : "announcements.create";
     if (!hasPermission(user, requiredPermission)) {
       setError("You don't have permission for this action.");
       return;
@@ -238,17 +252,25 @@ export default function Announcements({
     setSuccess("");
 
     if (!title.trim()) {
-      setError(
-        "Please enter announcement title."
-      );
+      setError("Please enter announcement title.");
       return;
     }
 
     if (!description.trim()) {
-      setError(
-        "Please enter announcement description."
-      );
+      setError("Please enter announcement description.");
       return;
+    }
+
+    if (audienceType === "course_semester") {
+      if (!targetCourse) {
+        setError("Please select a course.");
+        return;
+      }
+
+      if (targetSemester === "") {
+        setError("Please select a semester.");
+        return;
+      }
     }
 
     setSaving(true);
@@ -259,16 +281,12 @@ export default function Announcements({
       ======================================================== */
 
       if (editingId) {
-        const {
-          error,
-        } = await supabase
+        const { error } = await supabase
           .from("announcements")
           .update({
-            title:
-              title.trim(),
+            title: title.trim(),
 
-            description:
-              description.trim(),
+            description: description.trim(),
 
             category,
 
@@ -276,53 +294,55 @@ export default function Announcements({
 
             published,
 
-            updated_at:
-              new Date().toISOString(),
+            audience_type: audienceType,
+
+            target_course:
+              audienceType === "course_semester" ? targetCourse : null,
+
+            target_semester:
+              audienceType === "course_semester"
+                ? Number(targetSemester)
+                : null,
+
+            updated_at: new Date().toISOString(),
           })
-          .eq(
-            "id",
-            editingId
-          );
+          .eq("id", editingId);
 
         if (error) {
           throw error;
         }
 
-        setSuccess(
-          "Announcement updated successfully."
-        );
-      }
+        setSuccess("Announcement updated successfully.");
+      } else {
 
       /* ========================================================
          INSERT
       ======================================================== */
+        const { error } = await supabase.from("announcements").insert({
+          title: title.trim(),
 
-      else {
-        const {
-          error,
-        } = await supabase
-          .from("announcements")
-          .insert({
-            title:
-              title.trim(),
+          description: description.trim(),
 
-            description:
-              description.trim(),
+          category,
 
-            category,
+          priority,
 
-            priority,
+          published,
 
-            published,
-          });
+          audience_type: audienceType,
+
+          target_course:
+            audienceType === "course_semester" ? targetCourse : null,
+
+          target_semester:
+            audienceType === "course_semester" ? Number(targetSemester) : null,
+        });
 
         if (error) {
           throw error;
         }
 
-        setSuccess(
-          "Announcement created successfully."
-        );
+        setSuccess("Announcement created successfully.");
       }
 
       setShowModal(false);
@@ -331,15 +351,9 @@ export default function Announcements({
 
       await loadAnnouncements();
     } catch (err: any) {
-      console.error(
-        "ANNOUNCEMENT SAVE ERROR:",
-        err
-      );
+      console.error("ANNOUNCEMENT SAVE ERROR:", err);
 
-      setError(
-        err?.message ||
-          "Unable to save announcement."
-      );
+      setError(err?.message || "Unable to save announcement.");
     } finally {
       setSaving(false);
     }
@@ -349,14 +363,11 @@ export default function Announcements({
      DELETE
   ============================================================ */
 
-  async function deleteAnnouncement(
-    id: string
-  ) {
+  async function deleteAnnouncement(id: string) {
     if (!hasPermission(user, "announcements.delete")) return;
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this announcement?"
-      );
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this announcement?",
+    );
 
     if (!confirmed) {
       return;
@@ -366,41 +377,22 @@ export default function Announcements({
     setSuccess("");
 
     try {
-      const {
-        error,
-      } = await supabase
+      const { error } = await supabase
         .from("announcements")
         .delete()
-        .eq(
-          "id",
-          id
-        );
+        .eq("id", id);
 
       if (error) {
         throw error;
       }
 
-      setAnnouncements(
-        (current) =>
-          current.filter(
-            (item) =>
-              item.id !== id
-          )
-      );
+      setAnnouncements((current) => current.filter((item) => item.id !== id));
 
-      setSuccess(
-        "Announcement deleted successfully."
-      );
+      setSuccess("Announcement deleted successfully.");
     } catch (err: any) {
-      console.error(
-        "ANNOUNCEMENT DELETE ERROR:",
-        err
-      );
+      console.error("ANNOUNCEMENT DELETE ERROR:", err);
 
-      setError(
-        err?.message ||
-          "Unable to delete announcement."
-      );
+      setError(err?.message || "Unable to delete announcement.");
     }
   }
 
@@ -408,67 +400,45 @@ export default function Announcements({
      PUBLISH / UNPUBLISH
   ============================================================ */
 
-  async function togglePublished(
-    announcement: Announcement
-  ) {
+  async function togglePublished(announcement: Announcement) {
     if (!hasPermission(user, "announcements.edit")) return;
-    const newStatus =
-      !announcement.published;
+    const newStatus = !announcement.published;
 
     setError("");
     setSuccess("");
 
     try {
-      const {
-        error,
-      } = await supabase
+      const { error } = await supabase
         .from("announcements")
         .update({
-          published:
-            newStatus,
+          published: newStatus,
 
-          updated_at:
-            new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
-        .eq(
-          "id",
-          announcement.id
-        );
+        .eq("id", announcement.id);
 
       if (error) {
         throw error;
       }
 
-      setAnnouncements(
-        (current) =>
-          current.map(
-            (item) =>
-              item.id ===
-              announcement.id
-                ? {
-                    ...item,
-                    published:
-                      newStatus,
-                  }
-                : item
-          )
+      setAnnouncements((current) =>
+        current.map((item) =>
+          item.id === announcement.id
+            ? {
+                ...item,
+                published: newStatus,
+              }
+            : item,
+        ),
       );
 
       setSuccess(
-        newStatus
-          ? "Announcement published."
-          : "Announcement unpublished."
+        newStatus ? "Announcement published." : "Announcement unpublished.",
       );
     } catch (err: any) {
-      console.error(
-        "ANNOUNCEMENT STATUS ERROR:",
-        err
-      );
+      console.error("ANNOUNCEMENT STATUS ERROR:", err);
 
-      setError(
-        err?.message ||
-          "Unable to update announcement."
-      );
+      setError(err?.message || "Unable to update announcement.");
     }
   }
 
@@ -476,80 +446,43 @@ export default function Announcements({
      FILTER
   ============================================================ */
 
-  const filteredAnnouncements =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
+  const filteredAnnouncements = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-      return announcements.filter(
-        (item) => {
-          const matchesSearch =
-            !query ||
-            item.title
-              .toLowerCase()
-              .includes(query) ||
-            item.description
-              .toLowerCase()
-              .includes(query);
+    return announcements.filter((item) => {
+      const matchesSearch =
+        !query ||
+        item.title.toLowerCase().includes(query) ||
+        item.description.toLowerCase().includes(query);
 
-          const matchesCategory =
-            filter === "All" ||
-            item.category ===
-              filter;
+      const matchesCategory = filter === "All" || item.category === filter;
 
-          return (
-            matchesSearch &&
-            matchesCategory
-          );
-        }
-      );
-    }, [
-      announcements,
-      search,
-      filter,
-    ]);
+      return matchesSearch && matchesCategory;
+    });
+  }, [announcements, search, filter]);
 
   /* ============================================================
      STATS
   ============================================================ */
 
-  const total =
-    announcements.length;
+  const total = announcements.length;
 
-  const publishedCount =
-    announcements.filter(
-      (item) =>
-        item.published
-    ).length;
+  const publishedCount = announcements.filter((item) => item.published).length;
 
-  const importantCount =
-    announcements.filter(
-      (item) =>
-        item.priority ===
-          "Important" ||
-        item.priority ===
-          "Urgent"
-    ).length;
+  const importantCount = announcements.filter(
+    (item) => item.priority === "Important" || item.priority === "Urgent",
+  ).length;
 
   /* ============================================================
      DATE
   ============================================================ */
 
-  function formatDate(
-    value: string
-  ) {
-    return new Date(
-      value
-    ).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+  function formatDate(value: string) {
+    return new Date(value).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   }
 
   /* ============================================================
@@ -562,36 +495,23 @@ export default function Announcements({
 
   return (
     <div className="announcements-page">
-
       {/* ======================================================
           BACK TO DASHBOARD
       ====================================================== */}
 
-      <BackToDashboard
-        onBack={onBack}
-      />
+      <BackToDashboard onBack={onBack} />
 
       {/* ======================================================
           HEADER
       ====================================================== */}
 
       <div className="announcement-header">
-
         <div className="announcement-title-block">
+          <div className="announcement-eyebrow">COMMUNICATION</div>
 
-          <div className="announcement-eyebrow">
-            COMMUNICATION
-          </div>
+          <h1>Announcements</h1>
 
-          <h1>
-            Announcements
-          </h1>
-
-          <p>
-            Create and manage college
-            announcements for students.
-          </p>
-
+          <p>Create and manage college announcements for students.</p>
         </div>
 
         <button
@@ -600,13 +520,9 @@ export default function Announcements({
           onClick={openCreate}
           disabled={!hasPermission(user, "announcements.create")}
         >
-          <span>
-            +
-          </span>
-
+          <span>+</span>
           New Announcement
         </button>
-
       </div>
 
       {/* ======================================================
@@ -615,39 +531,21 @@ export default function Announcements({
 
       {error && (
         <div className="announcement-alert error">
+          <span>{error}</span>
 
-          <span>
-            {error}
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setError("")
-            }
-          >
+          <button type="button" onClick={() => setError("")}>
             ×
           </button>
-
         </div>
       )}
 
       {success && (
         <div className="announcement-alert success">
+          <span>{success}</span>
 
-          <span>
-            {success}
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setSuccess("")
-            }
-          >
+          <button type="button" onClick={() => setSuccess("")}>
             ×
           </button>
-
         </div>
       )}
 
@@ -656,87 +554,53 @@ export default function Announcements({
       ====================================================== */}
 
       <div className="announcement-stats">
-
         <div className="announcement-stat-card">
-
           <div className="stat-icon blue">
-            <span>
-              ▣
-            </span>
+            <span>▣</span>
           </div>
 
           <div>
-            <span>
-              Total
-            </span>
+            <span>Total</span>
 
-            <strong>
-              {total}
-            </strong>
+            <strong>{total}</strong>
           </div>
-
         </div>
 
         <div className="announcement-stat-card">
-
           <div className="stat-icon green">
-            <span>
-              ✓
-            </span>
+            <span>✓</span>
           </div>
 
           <div>
-            <span>
-              Published
-            </span>
+            <span>Published</span>
 
-            <strong>
-              {publishedCount}
-            </strong>
+            <strong>{publishedCount}</strong>
           </div>
-
         </div>
 
         <div className="announcement-stat-card">
-
           <div className="stat-icon orange">
-            <span>
-              !
-            </span>
+            <span>!</span>
           </div>
 
           <div>
-            <span>
-              Important
-            </span>
+            <span>Important</span>
 
-            <strong>
-              {importantCount}
-            </strong>
+            <strong>{importantCount}</strong>
           </div>
-
         </div>
 
         <div className="announcement-stat-card">
-
           <div className="stat-icon purple">
-            <span>
-              ↗
-            </span>
+            <span>↗</span>
           </div>
 
           <div>
-            <span>
-              Visible to Students
-            </span>
+            <span>Visible to Students</span>
 
-            <strong>
-              {publishedCount}
-            </strong>
+            <strong>{publishedCount}</strong>
           </div>
-
         </div>
-
       </div>
 
       {/* ======================================================
@@ -744,53 +608,30 @@ export default function Announcements({
       ====================================================== */}
 
       <div className="announcement-toolbar">
-
         <div className="announcement-search">
-
-          <span>
-            ⌕
-          </span>
+          <span>⌕</span>
 
           <input
             type="text"
             value={search}
             placeholder="Search announcements..."
-            onChange={(event) =>
-              setSearch(
-                event.target.value
-              )
-            }
+            onChange={(event) => setSearch(event.target.value)}
           />
-
         </div>
 
         <select
           className="announcement-filter"
           value={filter}
-          onChange={(event) =>
-            setFilter(
-              event.target.value
-            )
-          }
+          onChange={(event) => setFilter(event.target.value)}
         >
+          <option value="All">All Categories</option>
 
-          <option value="All">
-            All Categories
-          </option>
-
-          {CATEGORIES.map(
-            (item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-            )
-          )}
-
+          {CATEGORIES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
         </select>
-
       </div>
 
       {/* ======================================================
@@ -798,200 +639,130 @@ export default function Announcements({
       ====================================================== */}
 
       <div className="announcement-list">
-
         {loading ? (
-
           <div className="announcement-empty">
-
             <div className="loading-circle" />
 
-            <p>
-              Loading announcements...
-            </p>
-
+            <p>Loading announcements...</p>
           </div>
-
         ) : filteredAnnouncements.length === 0 ? (
-
           <div className="announcement-empty">
+            <div className="empty-icon">!</div>
 
-            <div className="empty-icon">
-              !
-            </div>
+            <h3>No announcements found</h3>
 
-            <h3>
-              No announcements found
-            </h3>
-
-            <p>
-              Create your first announcement
-              to get started.
-            </p>
+            <p>Create your first announcement to get started.</p>
 
             <button
               type="button"
               className="empty-create-btn"
-              onClick={
-                openCreate
-              }
+              onClick={openCreate}
             >
               Create Announcement
             </button>
-
           </div>
-
         ) : (
+          filteredAnnouncements.map((announcement) => (
+            <div
+              key={announcement.id}
+              className={`announcement-card priority-${announcement.priority.toLowerCase()}`}
+            >
+              {/* LEFT PRIORITY */}
 
-          filteredAnnouncements.map(
-            (announcement) => (
+              <div className="announcement-priority" />
 
-              <div
-                key={
-                  announcement.id
-                }
-                className={`announcement-card priority-${announcement.priority.toLowerCase()}`}
-              >
+              {/* CONTENT */}
 
-                {/* LEFT PRIORITY */}
-
-                <div className="announcement-priority" />
-
-                {/* CONTENT */}
-
-                <div className="announcement-card-content">
-
-                  <div className="announcement-card-top">
-
-                    <div className="announcement-tags">
-
-                      <span className="category-tag">
-                        {
-                          announcement.category
-                        }
-                      </span>
-
-                      <span
-                        className={`priority-tag ${announcement.priority.toLowerCase()}`}
-                      >
-                        {
-                          announcement.priority
-                        }
-                      </span>
-
-                      <span
-                        className={
-                          announcement.published
-                            ? "status-tag published"
-                            : "status-tag draft"
-                        }
-                      >
-                        {announcement.published
-                          ? "Published"
-                          : "Draft"}
-                      </span>
-
-                    </div>
-
-                    <span className="announcement-date">
-                      {formatDate(
-                        announcement.created_at
-                      )}
+              <div className="announcement-card-content">
+                <div className="announcement-card-top">
+                  <div className="announcement-tags">
+                    <span className="category-tag">
+                      {announcement.category}
                     </span>
 
+                    <span
+                      className={`priority-tag ${announcement.priority.toLowerCase()}`}
+                    >
+                      {announcement.priority}
+                    </span>
+
+                    <span
+                      className={
+                        announcement.published
+                          ? "status-tag published"
+                          : "status-tag draft"
+                      }
+                    >
+                      {announcement.published ? "Published" : "Draft"}
+                    </span>
                   </div>
 
-                  <h2>
-                    {
-                      announcement.title
+                  <span
+                    className="announcement-audience-tag"
+                    title={
+                      announcement.audience_type === "all"
+                        ? "Visible to all students"
+                        : `${announcement.target_course || ""} • Semester ${announcement.target_semester ?? ""}`
                     }
-                  </h2>
+                  >
+                    {announcement.audience_type === "all"
+                      ? "All Students"
+                      : `${announcement.target_course || "Course"} • Sem ${announcement.target_semester ?? "-"}`}
+                  </span>
 
-                  <p>
-                    {
-                      announcement.description
-                    }
-                  </p>
-
+                  <span className="announcement-date">
+                    {formatDate(announcement.created_at)}
+                  </span>
                 </div>
 
-                {/* ==================================================
+                <h2>{announcement.title}</h2>
+
+                <p>{announcement.description}</p>
+              </div>
+
+              {/* ==================================================
                     RIGHT ACTIONS
                 ================================================== */}
 
-                <div className="announcement-actions">
+              <div className="announcement-actions">
+                <button
+                  type="button"
+                  className="announcement-action-btn edit"
+                  disabled={!hasPermission(user, "announcements.edit")}
+                  onClick={() => openEdit(announcement)}
+                >
+                  <span className="action-icon">✎</span>
+                  Edit
+                </button>
 
-                  <button
-                    type="button"
-                    className="announcement-action-btn edit"
-                    disabled={!hasPermission(user, "announcements.edit")}
-                    onClick={() =>
-                      openEdit(
-                        announcement
-                      )
-                    }
-                  >
+                <button
+                  type="button"
+                  className={`announcement-action-btn ${
+                    announcement.published ? "unpublish" : "publish"
+                  }`}
+                  disabled={!hasPermission(user, "announcements.edit")}
+                  onClick={() => togglePublished(announcement)}
+                >
+                  <span className="action-icon">
+                    {announcement.published ? "○" : "✓"}
+                  </span>
 
-                    <span className="action-icon">
-                      ✎
-                    </span>
+                  {announcement.published ? "Unpublish" : "Publish"}
+                </button>
 
-                    Edit
-
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`announcement-action-btn ${
-                      announcement.published
-                        ? "unpublish"
-                        : "publish"
-                    }`}
-                    disabled={!hasPermission(user, "announcements.edit")}
-                    onClick={() =>
-                      togglePublished(
-                        announcement
-                      )
-                    }
-                  >
-
-                    <span className="action-icon">
-                      {announcement.published
-                        ? "○"
-                        : "✓"}
-                    </span>
-
-                    {announcement.published
-                      ? "Unpublish"
-                      : "Publish"}
-
-                  </button>
-
-                  <button
-                    type="button"
-                    className="announcement-action-btn delete"
-                    disabled={!hasPermission(user, "announcements.delete")}
-                    onClick={() =>
-                      deleteAnnouncement(
-                        announcement.id
-                      )
-                    }
-                  >
-
-                    <span className="action-icon">
-                      ×
-                    </span>
-
-                    Delete
-
-                  </button>
-
-                </div>
-
+                <button
+                  type="button"
+                  className="announcement-action-btn delete"
+                  disabled={!hasPermission(user, "announcements.delete")}
+                  onClick={() => deleteAnnouncement(announcement.id)}
+                >
+                  <span className="action-icon">×</span>
+                  Delete
+                </button>
               </div>
-            )
-          )
+            </div>
+          ))
         )}
-
       </div>
 
       {/* ======================================================
@@ -999,219 +770,207 @@ export default function Announcements({
       ====================================================== */}
 
       {showModal && (
-
         <div
           className="announcement-modal-overlay"
           onMouseDown={(event) => {
-
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
+            if (event.target === event.currentTarget) {
               closeModal();
             }
-
           }}
         >
-
           <div className="announcement-modal">
-
             {/* MODAL HEADER */}
 
             <div className="modal-header">
-
               <div>
-
                 <span>
-                  {editingId
-                    ? "EDIT ANNOUNCEMENT"
-                    : "NEW ANNOUNCEMENT"}
+                  {editingId ? "EDIT ANNOUNCEMENT" : "NEW ANNOUNCEMENT"}
                 </span>
 
                 <h2>
-                  {editingId
-                    ? "Update announcement"
-                    : "Create announcement"}
+                  {editingId ? "Update announcement" : "Create announcement"}
                 </h2>
-
               </div>
 
               <button
                 type="button"
                 className="modal-close"
-                onClick={
-                  closeModal
-                }
+                onClick={closeModal}
               >
                 ×
               </button>
-
             </div>
 
             {/* FORM */}
 
-            <form
-              onSubmit={
-                saveAnnouncement
-              }
-            >
-
+            <form onSubmit={saveAnnouncement}>
               {/* TITLE */}
 
               <div className="form-group">
-
-                <label>
-                  Announcement Title
-                </label>
+                <label>Announcement Title</label>
 
                 <input
                   type="text"
                   value={title}
                   placeholder="Enter announcement title"
-                  onChange={(event) =>
-                    setTitle(
-                      event.target.value
-                    )
-                  }
+                  onChange={(event) => setTitle(event.target.value)}
                   required
                 />
-
               </div>
 
               {/* DESCRIPTION */}
 
               <div className="form-group">
-
-                <label>
-                  Description
-                </label>
+                <label>Description</label>
 
                 <textarea
                   value={description}
                   placeholder="Write announcement details..."
                   rows={6}
-                  onChange={(event) =>
-                    setDescription(
-                      event.target.value
-                    )
-                  }
+                  onChange={(event) => setDescription(event.target.value)}
                   required
                 />
-
               </div>
 
               {/* CATEGORY / PRIORITY */}
 
               <div className="form-row">
-
                 <div className="form-group">
-
-                  <label>
-                    Category
-                  </label>
+                  <label>Category</label>
 
                   <select
                     value={category}
-                    onChange={(event) =>
-                      setCategory(
-                        event.target.value
-                      )
-                    }
+                    onChange={(event) => setCategory(event.target.value)}
                   >
-
-                    {CATEGORIES.map(
-                      (item) => (
-                        <option
-                          key={item}
-                          value={item}
-                        >
-                          {item}
-                        </option>
-                      )
-                    )}
-
+                    {CATEGORIES.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
-
                 </div>
 
                 <div className="form-group">
-
-                  <label>
-                    Priority
-                  </label>
+                  <label>Priority</label>
 
                   <select
                     value={priority}
-                    onChange={(event) =>
-                      setPriority(
-                        event.target.value
-                      )
-                    }
+                    onChange={(event) => setPriority(event.target.value)}
                   >
-
-                    {PRIORITIES.map(
-                      (item) => (
-                        <option
-                          key={item}
-                          value={item}
-                        >
-                          {item}
-                        </option>
-                      )
-                    )}
-
+                    {PRIORITIES.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
-
                 </div>
-
               </div>
+
+              {/* AUDIENCE */}
+
+              <div className="form-group audience-group">
+                <label>Send Announcement To</label>
+
+                <div className="audience-options">
+                  <button
+                    type="button"
+                    className={`audience-option ${
+                      audienceType === "all" ? "active" : ""
+                    }`}
+                    onClick={() => {
+                      setAudienceType("all");
+                      setTargetCourse("");
+                      setTargetSemester("");
+                    }}
+                  >
+                    <strong>All Students</strong>
+
+                    <span>Send to every student</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`audience-option ${
+                      audienceType === "course_semester" ? "active" : ""
+                    }`}
+                    onClick={() => setAudienceType("course_semester")}
+                  >
+                    <strong>Specific Course & Semester</strong>
+
+                    <span>Only matching students receive it</span>
+                  </button>
+                </div>
+              </div>
+
+              {audienceType === "course_semester" && (
+                <div className="form-row audience-target-row">
+                  <div className="form-group">
+                    <label>Course</label>
+
+                    <select
+                      value={targetCourse}
+                      onChange={(event) => setTargetCourse(event.target.value)}
+                    >
+                      <option value="">Select course</option>
+
+                      {courses.map((course) => (
+                        <option key={course} value={course}>
+                          {course}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Semester</label>
+
+                    <select
+                      value={targetSemester}
+                      onChange={(event) =>
+                        setTargetSemester(
+                          event.target.value ? Number(event.target.value) : "",
+                        )
+                      }
+                    >
+                      <option value="">Select semester</option>
+
+                      {semesters.map((semester) => (
+                        <option key={semester} value={semester}>
+                          Semester {semester}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* PUBLISH */}
 
               <div className="publish-control">
-
                 <div>
-
-                  <strong>
-                    Publish to Students
-                  </strong>
+                  <strong>Publish to Students</strong>
 
                   <span>
-                    Published announcements
-                    will appear in the
-                    student app.
+                    Published announcements will appear in the student app.
                   </span>
-
                 </div>
 
                 <button
                   type="button"
-                  className={`toggle ${
-                    published
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    setPublished(
-                      !published
-                    )
-                  }
+                  className={`toggle ${published ? "active" : ""}`}
+                  onClick={() => setPublished(!published)}
                 >
                   <span />
                 </button>
-
               </div>
 
               {/* BUTTONS */}
 
               <div className="modal-actions">
-
                 <button
                   type="button"
                   className="cancel-btn"
-                  onClick={
-                    closeModal
-                  }
+                  onClick={closeModal}
                 >
                   Cancel
                 </button>
@@ -1223,29 +982,103 @@ export default function Announcements({
                     saving ||
                     !hasPermission(
                       user,
-                      editingId
-                        ? "announcements.edit"
-                        : "announcements.create"
+                      editingId ? "announcements.edit" : "announcements.create",
                     )
                   }
                 >
                   {saving
                     ? "Saving..."
                     : editingId
-                    ? "Update Announcement"
-                    : "Publish Announcement"}
+                      ? "Update Announcement"
+                      : "Publish Announcement"}
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       )}
 
+      <style jsx global>{`
+        .announcement-audience-tag {
+          display: inline-flex;
+          align-items: center;
+          min-height: 24px;
+          padding: 0 9px;
+          border-radius: 999px;
+          background: #eef4ff;
+          border: 1px solid #d7e5ff;
+          color: #1d4ed8;
+          font-size: 9px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .audience-group {
+          margin-top: 16px;
+        }
+
+        .audience-options {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 8px;
+        }
+
+        .audience-option {
+          min-height: 72px;
+          padding: 12px 13px;
+          border: 1px solid #dbe3ee;
+          border-radius: 12px;
+          background: #ffffff;
+          color: #102a56;
+          text-align: left;
+          cursor: pointer;
+          transition: 0.16s ease;
+        }
+
+        .audience-option:hover {
+          border-color: #9db8df;
+          background: #f8fbff;
+        }
+
+        .audience-option.active {
+          border-color: #123b78;
+          background: #f1f6ff;
+          box-shadow: 0 0 0 2px rgba(18, 59, 120, 0.08);
+        }
+
+        .audience-option strong,
+        .audience-option span {
+          display: block;
+        }
+
+        .audience-option strong {
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        .audience-option span {
+          margin-top: 4px;
+          color: #64748b;
+          font-size: 9px;
+          font-weight: 600;
+          line-height: 1.35;
+        }
+
+        .audience-target-row {
+          margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+          .audience-options {
+            grid-template-columns: 1fr;
+          }
+
+          .announcement-audience-tag {
+            order: 3;
+          }
+        }
+      `}</style>
     </div>
   );
 }

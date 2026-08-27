@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import BackToDashboard from "./BackToDashboard";
 import PermissionDenied from "./PermissionDenied";
 import { AppUser, hasPermission } from "@/lib/permissions";
+import "../app/globals.css"
 
 type DoubtStatus = "pending" | "answered" | "resolved";
 
@@ -27,16 +28,7 @@ type Doubt = {
   updated_at: string;
 };
 
-const SUBJECTS = [
-  "All Subjects",
-  "English",
-  "History",
-  "Computer",
-  "Malayalam",
-  "Economics",
-  "Commerce",
-  "Mathematics",
-];
+
 
 export default function Doubts({
   onBack,
@@ -50,11 +42,9 @@ export default function Doubts({
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [subjectFilter, setSubjectFilter] =
-    useState("All Subjects");
+  const [subjectFilter, setSubjectFilter] = useState("All Subjects");
 
-  const [selectedDoubt, setSelectedDoubt] =
-    useState<Doubt | null>(null);
+  const [selectedDoubt, setSelectedDoubt] = useState<Doubt | null>(null);
 
   const [answer, setAnswer] = useState("");
 
@@ -96,11 +86,15 @@ export default function Doubts({
 
   /* ==========================================================
      REALTIME
-     ========================================================== */
+  ========================================================== */
 
   useEffect(() => {
+    let active = true;
+
     const channel = supabase
-      .channel("website-doubts")
+      .channel(
+        `website-doubts-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      )
       .on(
         "postgres_changes",
         {
@@ -108,13 +102,44 @@ export default function Doubts({
           schema: "public",
           table: "doubts",
         },
-        () => {
-          loadDoubts();
-        }
+        async (payload) => {
+          if (!active) return;
+
+          console.log("DOUBTS REALTIME EVENT:", payload.eventType);
+
+          // Fetch the authoritative current rows. This avoids relying on
+          // payload shape and keeps the currently open modal synchronized.
+          const { data, error } = await supabase
+            .from("doubts")
+            .select("*")
+            .order("created_at", {
+              ascending: false,
+            });
+
+          if (!active) return;
+
+          if (error) {
+            console.error("DOUBTS REALTIME REFRESH ERROR:", error);
+            return;
+          }
+
+          const fresh = (data || []) as Doubt[];
+
+          setDoubts(fresh);
+
+          setSelectedDoubt((current) => {
+            if (!current) return null;
+
+            return fresh.find((item) => item.id === current.id) || null;
+          });
+        },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("DOUBTS REALTIME STATUS:", status);
+      });
 
     return () => {
+      active = false;
       supabase.removeChannel(channel);
     };
   }, []);
@@ -124,15 +149,15 @@ export default function Doubts({
   ========================================================== */
 
   const pendingCount = doubts.filter(
-    (item) => item.status === "pending"
+    (item) => item.status === "pending",
   ).length;
 
   const answeredCount = doubts.filter(
-    (item) => item.status === "answered"
+    (item) => item.status === "answered",
   ).length;
 
   const resolvedCount = doubts.filter(
-    (item) => item.status === "resolved"
+    (item) => item.status === "resolved",
   ).length;
 
   /* ==========================================================
@@ -145,42 +170,21 @@ export default function Doubts({
     return doubts.filter((doubt) => {
       const matchesSearch =
         !query ||
-        doubt.student_name
-          .toLowerCase()
-          .includes(query) ||
-        doubt.title
-          .toLowerCase()
-          .includes(query) ||
-        doubt.question
-          .toLowerCase()
-          .includes(query) ||
-        (doubt.subject || "")
-          .toLowerCase()
-          .includes(query) ||
-        (doubt.admission_no || "")
-          .toLowerCase()
-          .includes(query);
+        doubt.student_name.toLowerCase().includes(query) ||
+        doubt.title.toLowerCase().includes(query) ||
+        doubt.question.toLowerCase().includes(query) ||
+        (doubt.subject || "").toLowerCase().includes(query) ||
+        (doubt.admission_no || "").toLowerCase().includes(query);
 
       const matchesStatus =
-        statusFilter === "all" ||
-        doubt.status === statusFilter;
+        statusFilter === "all" || doubt.status === statusFilter;
 
       const matchesSubject =
-        subjectFilter === "All Subjects" ||
-        doubt.subject === subjectFilter;
+        subjectFilter === "All Subjects" || doubt.subject === subjectFilter;
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesSubject
-      );
+      return matchesSearch && matchesStatus && matchesSubject;
     });
-  }, [
-    doubts,
-    search,
-    statusFilter,
-    subjectFilter,
-  ]);
+  }, [doubts, search, statusFilter, subjectFilter]);
 
   /* ==========================================================
      OPEN DOUBT
@@ -230,9 +234,7 @@ export default function Doubts({
        * used as the teacher when available.
        */
 
-      const {
-        data: authData,
-      } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
 
       const user = authData?.user;
 
@@ -271,10 +273,7 @@ export default function Doubts({
     } catch (err: any) {
       console.error(err);
 
-      setError(
-        err?.message ||
-          "Unable to send reply."
-      );
+      setError(err?.message || "Unable to send reply.");
     } finally {
       setSending(false);
     }
@@ -313,10 +312,7 @@ export default function Doubts({
     } catch (err: any) {
       console.error(err);
 
-      setError(
-        err?.message ||
-          "Unable to resolve doubt."
-      );
+      setError(err?.message || "Unable to resolve doubt.");
     } finally {
       setResolving(false);
     }
@@ -355,10 +351,7 @@ export default function Doubts({
         });
       }
     } catch (err: any) {
-      setError(
-        err?.message ||
-          "Unable to reopen doubt."
-      );
+      setError(err?.message || "Unable to reopen doubt.");
     }
   }
 
@@ -369,7 +362,7 @@ export default function Doubts({
   async function deleteDoubt(doubt: Doubt) {
     if (!hasPermission(user, "doubts.answer")) return;
     const confirmed = window.confirm(
-      "Are you sure you want to delete this doubt?"
+      "Are you sure you want to delete this doubt?",
     );
 
     if (!confirmed) return;
@@ -389,20 +382,13 @@ export default function Doubts({
 
       setSuccess("Doubt deleted.");
 
-      setDoubts((current) =>
-        current.filter(
-          (item) => item.id !== doubt.id
-        )
-      );
+      setDoubts((current) => current.filter((item) => item.id !== doubt.id));
 
       if (selectedDoubt?.id === doubt.id) {
         setSelectedDoubt(null);
       }
     } catch (err: any) {
-      setError(
-        err?.message ||
-          "Unable to delete doubt."
-      );
+      setError(err?.message || "Unable to delete doubt.");
     }
   }
 
@@ -411,24 +397,18 @@ export default function Doubts({
   ========================================================== */
 
   function formatDate(date: string) {
-    return new Date(date).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   }
 
   function formatTime(date: string) {
-    return new Date(date).toLocaleTimeString(
-      "en-IN",
-      {
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
+    return new Date(date).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   /* ==========================================================
@@ -441,36 +421,24 @@ export default function Doubts({
 
   return (
     <div className="doubts-page">
-
       {/* ======================================================
           BACK
       ====================================================== */}
 
-      <BackToDashboard
-        onBack={onBack}
-      />
+      <BackToDashboard onBack={onBack} />
 
       {/* ======================================================
           HEADER
       ====================================================== */}
 
       <div className="doubts-header">
-
         <div>
-          <div className="doubts-eyebrow">
-            ACADEMIC SUPPORT
-          </div>
+          <div className="doubts-eyebrow">ACADEMIC SUPPORT</div>
 
-          <h1>
-            Student Doubts
-          </h1>
+          <h1>Student Doubts</h1>
 
-          <p>
-            View, answer and manage
-            questions submitted by students.
-          </p>
+          <p>View, answer and manage questions submitted by students.</p>
         </div>
-
       </div>
 
       {/* ======================================================
@@ -481,10 +449,7 @@ export default function Doubts({
         <div className="doubt-alert error">
           <span>{error}</span>
 
-          <button
-            type="button"
-            onClick={() => setError("")}
-          >
+          <button type="button" onClick={() => setError("")}>
             ×
           </button>
         </div>
@@ -494,10 +459,7 @@ export default function Doubts({
         <div className="doubt-alert success">
           <span>{success}</span>
 
-          <button
-            type="button"
-            onClick={() => setSuccess("")}
-          >
+          <button type="button" onClick={() => setSuccess("")}>
             ×
           </button>
         </div>
@@ -508,71 +470,45 @@ export default function Doubts({
       ====================================================== */}
 
       <div className="doubt-stats">
-
         <div className="doubt-stat-card blue">
-          <div className="doubt-stat-icon">
-            ?
-          </div>
+          <div className="doubt-stat-icon">?</div>
 
           <div>
-            <span>
-              New Doubts
-            </span>
+            <span>New Doubts</span>
 
-            <strong>
-              {pendingCount}
-            </strong>
+            <strong>{pendingCount}</strong>
           </div>
         </div>
 
         <div className="doubt-stat-card green">
-          <div className="doubt-stat-icon">
-            ✓
-          </div>
+          <div className="doubt-stat-icon">✓</div>
 
           <div>
-            <span>
-              Answered
-            </span>
+            <span>Answered</span>
 
-            <strong>
-              {answeredCount}
-            </strong>
+            <strong>{answeredCount}</strong>
           </div>
         </div>
 
         <div className="doubt-stat-card purple">
-          <div className="doubt-stat-icon">
-            ✓
-          </div>
+          <div className="doubt-stat-icon">✓</div>
 
           <div>
-            <span>
-              Resolved
-            </span>
+            <span>Resolved</span>
 
-            <strong>
-              {resolvedCount}
-            </strong>
+            <strong>{resolvedCount}</strong>
           </div>
         </div>
 
         <div className="doubt-stat-card orange">
-          <div className="doubt-stat-icon">
-            #
-          </div>
+          <div className="doubt-stat-icon">#</div>
 
           <div>
-            <span>
-              Total Doubts
-            </span>
+            <span>Total Doubts</span>
 
-            <strong>
-              {doubts.length}
-            </strong>
+            <strong>{doubts.length}</strong>
           </div>
         </div>
-
       </div>
 
       {/* ======================================================
@@ -580,58 +516,27 @@ export default function Doubts({
       ====================================================== */}
 
       <div className="doubt-toolbar">
-
         <div className="doubt-search">
-          <span>
-            ⌕
-          </span>
+          <span>⌕</span>
 
           <input
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search student, admission no, subject or doubt..."
           />
         </div>
 
         <select
           value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value)
-          }
+          onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="all">
-            All Status
-          </option>
+          <option value="all">All Status</option>
 
-          <option value="pending">
-            New
-          </option>
+          <option value="pending">New</option>
 
-          <option value="answered">
-            Answered
-          </option>
+          <option value="answered">Answered</option>
 
-          <option value="resolved">
-            Resolved
-          </option>
-        </select>
-
-        <select
-          value={subjectFilter}
-          onChange={(e) =>
-            setSubjectFilter(e.target.value)
-          }
-        >
-          {SUBJECTS.map((subject) => (
-            <option
-              key={subject}
-              value={subject}
-            >
-              {subject}
-            </option>
-          ))}
+          <option value="resolved">Resolved</option>
         </select>
 
       </div>
@@ -641,126 +546,80 @@ export default function Doubts({
       ====================================================== */}
 
       <div className="doubt-list">
-
         {loading ? (
           <div className="doubt-empty">
             <div className="doubt-loading" />
 
-            <strong>
-              Loading doubts...
-            </strong>
+            <strong>Loading doubts...</strong>
           </div>
         ) : filteredDoubts.length === 0 ? (
           <div className="doubt-empty">
+            <div className="doubt-empty-icon">?</div>
 
-            <div className="doubt-empty-icon">
-              ?
-            </div>
-
-            <strong>
-              No doubts found
-            </strong>
+            <strong>No doubts found</strong>
 
             <span>
-              Student questions will appear
-              here when they are submitted.
+              Student questions will appear here when they are submitted.
             </span>
-
           </div>
         ) : (
           filteredDoubts.map((doubt) => (
-            <div
-              className={`doubt-card ${doubt.status}`}
-              key={doubt.id}
-            >
-
+            <div className={`doubt-card ${doubt.status}`} key={doubt.id}>
               {/* LEFT */}
 
               <div className="doubt-card-content">
-
                 <div className="doubt-card-top">
-
                   <div className="doubt-tags">
-
                     <span className="doubt-subject">
-                      {doubt.subject ||
-                        "General"}
+                      {doubt.subject || "General"}
                     </span>
 
-                    <span
-                      className={`doubt-status ${doubt.status}`}
-                    >
-                      {doubt.status ===
-                      "pending"
+                    <span className={`doubt-status ${doubt.status}`}>
+                      {doubt.status === "pending"
                         ? "New"
-                        : doubt.status ===
-                          "answered"
-                        ? "Answered"
-                        : "Resolved"}
+                        : doubt.status === "answered"
+                          ? "Answered"
+                          : "Resolved"}
                     </span>
-
                   </div>
 
                   <span className="doubt-date">
-                    {formatDate(
-                      doubt.created_at
-                    )}
+                    {formatDate(doubt.created_at)}
                     {" · "}
-                    {formatTime(
-                      doubt.created_at
-                    )}
+                    {formatTime(doubt.created_at)}
                   </span>
-
                 </div>
 
-                <h2>
-                  {doubt.title}
-                </h2>
+                <h2>{doubt.title}</h2>
 
-                <p className="doubt-question-preview">
-                  {doubt.question}
-                </p>
+                <p className="doubt-question-preview">{doubt.question}</p>
 
                 <div className="doubt-student-info-row">
-
                   <div className="student-avatar">
-                    {doubt.student_name
-                      .charAt(0)
-                      .toUpperCase()}
+                    {doubt.student_name.charAt(0).toUpperCase()}
                   </div>
 
                   <div>
-                    <strong>
-                      {doubt.student_name}
-                    </strong>
+                    <strong>{doubt.student_name}</strong>
 
                     <span>
-                      {doubt.admission_no ||
-                        "No admission number"}
+                      {doubt.admission_no || "No admission number"}
                       {" · "}
-                      {doubt.course ||
-                        "Course not set"}
+                      {doubt.course || "Course not set"}
                       {" · "}
-                      Semester{" "}
-                      {doubt.semester ??
-                        "-"}
+                      Semester {doubt.semester ?? "-"}
                     </span>
                   </div>
-
                 </div>
-
               </div>
 
               {/* RIGHT ACTION */}
 
               <div className="doubt-card-actions">
-
                 <button
                   type="button"
                   className="open-doubt-btn"
-                  onClick={() =>
-                    openDoubt(doubt)
-                  }
+                  onClick={() => openDoubt(doubt)}
                 >
                   Open Doubt
                 </button>
@@ -768,19 +627,14 @@ export default function Doubts({
                 <button
                   type="button"
                   className="delete-doubt-btn"
-                  onClick={() =>
-                    deleteDoubt(doubt)
-                  }
+                  onClick={() => deleteDoubt(doubt)}
                 >
                   Delete
                 </button>
-
               </div>
-
             </div>
           ))
         )}
-
       </div>
 
       {/* ======================================================
@@ -791,221 +645,130 @@ export default function Doubts({
         <div
           className="doubt-modal-overlay"
           onMouseDown={(e) => {
-            if (
-              e.target ===
-              e.currentTarget
-            ) {
+            if (e.target === e.currentTarget) {
               closeDoubt();
             }
           }}
         >
-
           <div className="doubt-modal">
-
             {/* HEADER */}
 
             <div className="doubt-modal-header">
-
               <div>
+                <div className="doubt-modal-label">STUDENT DOUBT</div>
 
-                <div className="doubt-modal-label">
-                  STUDENT DOUBT
-                </div>
-
-                <h2>
-                  Doubt Details
-                </h2>
-
+                <h2>Doubt Details</h2>
               </div>
 
               <button
                 type="button"
                 className="doubt-close-btn"
-                onClick={
-                  closeDoubt
-                }
+                onClick={closeDoubt}
               >
                 ×
               </button>
-
             </div>
 
             {/* STUDENT DETAILS */}
 
             <div className="doubt-profile">
-
               <div className="large-student-avatar">
-                {selectedDoubt.student_name
-                  .charAt(0)
-                  .toUpperCase()}
+                {selectedDoubt.student_name.charAt(0).toUpperCase()}
               </div>
 
               <div>
+                <strong>{selectedDoubt.student_name}</strong>
 
-                <strong>
-                  {
-                    selectedDoubt.student_name
-                  }
-                </strong>
+                <span>Admission No: {selectedDoubt.admission_no || "-"}</span>
 
                 <span>
-                  Admission No:{" "}
-                  {
-                    selectedDoubt.admission_no ||
-                    "-"
-                  }
-                </span>
-
-                <span>
-                  {
-                    selectedDoubt.course ||
-                    "Course not set"
-                  }
+                  {selectedDoubt.course || "Course not set"}
                   {" · Semester "}
-                  {
-                    selectedDoubt.semester ??
-                    "-"
-                  }
+                  {selectedDoubt.semester ?? "-"}
                 </span>
-
               </div>
-
             </div>
 
             {/* QUESTION */}
 
+            {/* QUESTION */}
             <div className="question-box">
-
               <div className="question-meta">
+                <span>{selectedDoubt.subject || "General"}</span>
 
-                <span>
-                  {selectedDoubt.subject ||
-                    "General"}
-                </span>
-
-                <span>
-                  {formatDate(
-                    selectedDoubt.created_at
-                  )}
-                </span>
-
+                <span>{formatDate(selectedDoubt.created_at)}</span>
               </div>
 
-              <h3>
-                {
-                  selectedDoubt.title
-                }
-              </h3>
+              <h3>{selectedDoubt.title}</h3>
 
-              <p>
-                {
-                  selectedDoubt.question
-                }
-              </p>
+              <div className="student-question">
+                <div className="question-label">STUDENT QUESTION</div>
 
+                <p>{selectedDoubt.question}</p>
+              </div>
             </div>
 
             {/* EXISTING ANSWER */}
 
             {selectedDoubt.answer && (
               <div className="existing-answer">
-
                 <div className="answer-heading">
-                  <span>
-                    TEACHER REPLY
-                  </span>
+                  <span>TEACHER REPLY</span>
 
-                  <small>
-                    {
-                      selectedDoubt.teacher_name ||
-                      "Teacher"
-                    }
-                  </small>
+                  <small>{selectedDoubt.teacher_name || "Teacher"}</small>
                 </div>
 
-                <p>
-                  {
-                    selectedDoubt.answer
-                  }
-                </p>
-
+                <p>{selectedDoubt.answer}</p>
               </div>
             )}
 
             {/* REPLY */}
 
-            {selectedDoubt.status !==
-              "resolved" && (
+            {selectedDoubt.status !== "resolved" && (
               <div className="reply-section">
-
                 <label>
-                  {selectedDoubt.answer
-                    ? "Update Reply"
-                    : "Teacher Reply"}
+                  {selectedDoubt.answer ? "Update Reply" : "Teacher Reply"}
                 </label>
 
                 <textarea
                   value={answer}
-                  onChange={(e) =>
-                    setAnswer(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setAnswer(e.target.value)}
                   placeholder="Write your answer to the student..."
                   rows={6}
                 />
-
               </div>
             )}
 
             {/* RESOLVED INFO */}
 
-            {selectedDoubt.status ===
-              "resolved" && (
+            {selectedDoubt.status === "resolved" && (
               <div className="resolved-box">
-
-                <span>
-                  ✓
-                </span>
+                <span>✓</span>
 
                 <div>
-                  <strong>
-                    Doubt Resolved
-                  </strong>
+                  <strong>Doubt Resolved</strong>
 
-                  <p>
-                    This doubt has been
-                    marked as resolved.
-                  </p>
+                  <p>This doubt has been marked as resolved.</p>
                 </div>
-
               </div>
             )}
 
             {/* MODAL ACTIONS */}
 
             <div className="doubt-modal-actions">
-
               <button
                 type="button"
                 className="secondary-doubt-btn"
-                onClick={
-                  closeDoubt
-                }
+                onClick={closeDoubt}
               >
                 Close
               </button>
 
-              {selectedDoubt.status ===
-                "resolved" ? (
+              {selectedDoubt.status === "resolved" ? (
                 <button
                   type="button"
                   className="reopen-doubt-btn"
-                  onClick={() =>
-                    reopenDoubt(
-                      selectedDoubt
-                    )
-                  }
+                  onClick={() => reopenDoubt(selectedDoubt)}
                   disabled={!hasPermission(user, "doubts.answer")}
                 >
                   Reopen Doubt
@@ -1020,45 +783,33 @@ export default function Doubts({
                       !answer.trim() ||
                       !hasPermission(user, "doubts.answer")
                     }
-                    onClick={
-                      sendReply
-                    }
+                    onClick={sendReply}
                   >
                     {sending
                       ? "Sending..."
                       : selectedDoubt.answer
-                      ? "Update Reply"
-                      : "Send Reply"}
+                        ? "Update Reply"
+                        : "Send Reply"}
                   </button>
 
-                  {selectedDoubt.status ===
-                    "answered" && (
+                  {selectedDoubt.status === "answered" && (
                     <button
                       type="button"
                       className="resolve-doubt-btn"
                       disabled={
-                        resolving ||
-                        !hasPermission(user, "doubts.answer")
+                        resolving || !hasPermission(user, "doubts.answer")
                       }
-                      onClick={
-                        markResolved
-                      }
+                      onClick={markResolved}
                     >
-                      {resolving
-                        ? "Resolving..."
-                        : "Mark Resolved"}
+                      {resolving ? "Resolving..." : "Mark Resolved"}
                     </button>
                   )}
                 </>
               )}
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

@@ -14391,3 +14391,34 @@ td b {
     box-sizing: border-box !important;
   }
 }
+
+.question-box {
+  margin-top: 18px;
+}
+
+.student-question {
+  margin-top: 14px;
+  padding: 20px 22px;
+  background: #f8fafc;
+  border: 1px solid #dbe3ee;
+  border-left: 4px solid #2563eb;
+  border-radius: 14px;
+}
+
+.question-label {
+  margin-bottom: 9px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.student-question p {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  line-height: 1.7;
+  font-weight: 600;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

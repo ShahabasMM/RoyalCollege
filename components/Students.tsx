@@ -2072,7 +2072,14 @@ export default function Students({
                 MOBILE STUDENT CARDS
             ================================================== */}
 
-            <div className="studentMobileList">
+            <div
+              className="studentMobileList"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
 
               {filtered.map(
                 (student) => (
@@ -2083,6 +2090,14 @@ export default function Students({
                       student.admissionNo
                     }
                     className="studentMobileCard"
+                    style={{
+                      border: "1px solid #111111",
+                      borderRadius: "14px",
+                      background: "#FFFFFF",
+                      padding: "16px",
+                      boxShadow: "0 2px 8px rgba(15, 23, 42, 0.05)",
+                      overflow: "hidden",
+                    }}
                   >
 
                     <div>
@@ -2160,6 +2175,13 @@ export default function Students({
                     <button
                       type="button"
                       className="tableAction"
+                      style={{
+                        background: "#7A1F2B",
+                        color: "#FFFFFF",
+                        border: "1px solid #7A1F2B",
+                        borderRadius: "10px",
+                        fontWeight: 800,
+                      }}
                       onClick={(
                         event,
                       ) => {
