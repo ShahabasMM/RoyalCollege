@@ -107,9 +107,7 @@ function normalizeCourse(value: unknown): string {
   return clean(value);
 }
 
-function normalizeSemester(
-  value: unknown,
-): number {
+function normalizeSemester(value: unknown): number {
   const numeric = Number(value);
 
   if (
@@ -123,26 +121,17 @@ function normalizeSemester(
   return 1;
 }
 
-function normalizeStatus(
-  value: unknown,
-): StudentStatus {
-  return clean(value).toLowerCase() ===
-    "inactive"
+function normalizeStatus(value: unknown): StudentStatus {
+  return clean(value).toLowerCase() === "inactive"
     ? "Inactive"
     : "Active";
 }
 
-function getNextSemester(
-  semester: number,
-): number | null {
-  return semester >= 8
-    ? null
-    : semester + 1;
+function getNextSemester(semester: number): number | null {
+  return semester >= 8 ? null : semester + 1;
 }
 
-function semesterLabel(
-  semester: number,
-): string {
+function semesterLabel(semester: number): string {
   return `Semester ${semester}`;
 }
 
@@ -150,25 +139,16 @@ function findHeaderIndex(
   headers: string[],
   patterns: string[],
 ): number {
-  return headers.findIndex(
-    (header) => {
-      const normalized =
-        header
-          .toLowerCase()
-          .replace(
-            /[^a-z0-9]+/g,
-            " ",
-          )
-          .trim();
+  return headers.findIndex((header) => {
+    const normalized = header
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
 
-      return patterns.some(
-        (pattern) =>
-          normalized.includes(
-            pattern,
-          ),
-      );
-    },
-  );
+    return patterns.some((pattern) =>
+      normalized.includes(pattern),
+    );
+  });
 }
 
 /* ============================================================
@@ -182,39 +162,29 @@ export default function Students({
   onBack: () => void;
   user: AppUser;
 }) {
-  const [students, setStudents] =
-    useState<Student[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
 
   const [
     selectedSemester,
     setSelectedSemester,
   ] = useState(1);
 
-  const [course, setCourse] =
-    useState("All Courses");
+  const [course, setCourse] = useState("All Courses");
 
-  const [status, setStatus] =
-    useState("All Statuses");
+  const [status, setStatus] = useState("All Statuses");
 
-  const [query, setQuery] =
-    useState("");
+  const [query, setQuery] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [importing, setImporting] =
-    useState(false);
+  const [importing, setImporting] = useState(false);
 
-  const [promoting, setPromoting] =
-    useState(false);
+  const [promoting, setPromoting] = useState(false);
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] = useState("");
 
   const [messageType, setMessageType] =
-    useState<
-      "success" | "error" | ""
-    >("");
+    useState<"success" | "error" | "">("");
 
   /* ==========================================================
      VIEW / EDIT / DELETE STATE
@@ -223,16 +193,12 @@ export default function Students({
   const [
     selectedStudent,
     setSelectedStudent,
-  ] = useState<Student | null>(
-    null,
-  );
+  ] = useState<Student | null>(null);
 
   const [
     editingStudent,
     setEditingStudent,
-  ] = useState<Student | null>(
-    null,
-  );
+  ] = useState<Student | null>(null);
 
   const [
     savingStudent,
@@ -242,27 +208,20 @@ export default function Students({
   const [
     deletingStudentId,
     setDeletingStudentId,
-  ] = useState<string | null>(
-    null,
-  );
+  ] = useState<string | null>(null);
 
-  const fileRef =
-    useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   /* ==========================================================
      MESSAGES
   ========================================================== */
 
-  function showSuccess(
-    text: string,
-  ) {
+  function showSuccess(text: string) {
     setMessage(text);
     setMessageType("success");
   }
 
-  function showError(
-    text: string,
-  ) {
+  function showError(text: string) {
     setMessage(text);
     setMessageType("error");
   }
@@ -281,67 +240,53 @@ export default function Students({
       setLoading(true);
       clearMessage();
 
-      const { data, error } =
-        await supabase
-          .from("students")
-          .select(
-            `
-              id,
-              reg_no,
-              name,
-              course,
-              cap_id,
-              admission_no,
-              semester,
-              status
-            `,
-          )
-          .order("name", {
-            ascending: true,
-          });
+      const { data, error } = await supabase
+        .from("students")
+        .select(
+          `
+            id,
+            reg_no,
+            name,
+            course,
+            cap_id,
+            admission_no,
+            semester,
+            status
+          `,
+        )
+        .order("name", {
+          ascending: true,
+        });
 
       if (error) {
         throw error;
       }
 
-      const mapped: Student[] =
-        (data ?? []).map(
-          (row: any) => ({
-            id: row.id,
+      const mapped: Student[] = (data ?? []).map(
+        (row: any) => ({
+          id: row.id,
 
-            regNo: clean(
-              row.reg_no,
-            ),
+          regNo: clean(row.reg_no),
 
-            name: clean(
-              row.name,
-            ),
+          name: clean(row.name),
 
-            course:
-              normalizeCourse(
-                row.course,
-              ),
+          course: normalizeCourse(row.course),
 
-            capId: clean(
-              row.cap_id,
-            ),
+          capId: clean(row.cap_id),
 
-            admissionNo:
-              clean(
-                row.admission_no,
-              ).toUpperCase(),
+          admissionNo: clean(
+            row.admission_no,
+          ).toUpperCase(),
 
-            semester:
-              normalizeSemester(
-                row.semester,
-              ),
+          semester: normalizeSemester(
+            row.semester,
+          ),
 
-            status:
-              normalizeStatus(
-                row.status,
-              ),
-          }),
-        );
+          status: normalizeStatus(
+            row.status,
+          ),
+        }),
+      );
 
       setStudents(mapped);
     } catch (error) {
@@ -367,52 +312,42 @@ export default function Students({
   ========================================================== */
 
   const filtered = useMemo(() => {
-    const search =
-      query.trim().toLowerCase();
+    const search = query.trim().toLowerCase();
 
-    return students.filter(
-      (student) => {
-        const semesterMatch =
-          student.semester ===
-          selectedSemester;
+    return students.filter((student) => {
+      const semesterMatch =
+        student.semester === selectedSemester;
 
-        const courseMatch =
-          course ===
-            "All Courses" ||
-          student.course === course;
+      const courseMatch =
+        course === "All Courses" ||
+        student.course === course;
 
-        const statusMatch =
-          status ===
-            "All Statuses" ||
-          student.status === status;
+      const statusMatch =
+        status === "All Statuses" ||
+        student.status === status;
 
-        const searchable = [
-          student.name,
-          student.regNo,
-          student.course,
-          student.capId,
-          student.admissionNo,
-          semesterLabel(
-            student.semester,
-          ),
-        ]
-          .join(" ")
-          .toLowerCase();
+      const searchable = [
+        student.name,
+        student.regNo,
+        student.course,
+        student.capId,
+        student.admissionNo,
+        semesterLabel(student.semester),
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        const searchMatch =
-          !search ||
-          searchable.includes(
-            search,
-          );
+      const searchMatch =
+        !search ||
+        searchable.includes(search);
 
-        return (
-          semesterMatch &&
-          courseMatch &&
-          statusMatch &&
-          searchMatch
-        );
-      },
-    );
+      return (
+        semesterMatch &&
+        courseMatch &&
+        statusMatch &&
+        searchMatch
+      );
+    });
   }, [
     students,
     selectedSemester,
@@ -425,15 +360,11 @@ export default function Students({
      COURSE COUNT
   ========================================================== */
 
-  function studentCount(
-    courseName: string,
-  ) {
+  function studentCount(courseName: string) {
     return students.filter(
       (student) =>
-        student.semester ===
-          selectedSemester &&
-        student.course ===
-          courseName,
+        student.semester === selectedSemester &&
+        student.course === courseName,
     ).length;
   }
 
@@ -474,8 +405,7 @@ export default function Students({
             selectedSemester;
 
           const courseMatch =
-            course ===
-              "All Courses" ||
+            course === "All Courses" ||
             student.course ===
               course;
 
@@ -683,13 +613,9 @@ export default function Students({
 
       await loadStudents();
 
-      setSelectedStudent(
-        null,
-      );
+      setSelectedStudent(null);
 
-      setEditingStudent(
-        null,
-      );
+      setEditingStudent(null);
 
       showSuccess(
         `${name} was updated successfully.`,
@@ -766,13 +692,9 @@ export default function Students({
         throw error;
       }
 
-      setSelectedStudent(
-        null,
-      );
+      setSelectedStudent(null);
 
-      setEditingStudent(
-        null,
-      );
+      setEditingStudent(null);
 
       await loadStudents();
 
@@ -790,13 +712,11 @@ export default function Students({
           "Unable to delete student.",
       );
     } finally {
-      setDeletingStudentId(
-        null,
-      );
+      setDeletingStudentId(null);
     }
   }
 
-    /* ==========================================================
+  /* ==========================================================
      EXPORT EXCEL
   ========================================================== */
 
@@ -864,9 +784,7 @@ export default function Students({
      IMPORT EXCEL
   ========================================================== */
 
-  function importExcel(
-    file: File,
-  ) {
+  function importExcel(file: File) {
     if (
       !hasPermission(
         user,
@@ -912,8 +830,7 @@ export default function Students({
           );
 
         if (
-          !workbook.SheetNames
-            .length
+          !workbook.SheetNames.length
         ) {
           throw new Error(
             "No worksheet found.",
@@ -944,13 +861,11 @@ export default function Students({
            FIND HEADER ROW
         ------------------------------------------------------ */
 
-        let headerRowIndex =
-          -1;
+        let headerRowIndex = -1;
 
         for (
           let i = 0;
-          i <
-          Math.min(
+          i < Math.min(
             matrix.length,
             40,
           );
@@ -985,9 +900,7 @@ export default function Students({
               )
             )
           ) {
-            headerRowIndex =
-              i;
-
+            headerRowIndex = i;
             break;
           }
         }
@@ -1087,11 +1000,8 @@ export default function Students({
           );
 
         /*
-         * IMPORTANT:
          * Semester is intentionally NOT read from Excel.
-         *
-         * The semester selected in the UI is used for every
-         * imported student.
+         * Selected UI semester is used.
          */
 
         const admissionIndex =
@@ -1213,11 +1123,6 @@ export default function Students({
 
             admissionNo,
 
-            /*
-             * NEVER use semester from Excel.
-             *
-             * The semester selected on screen is saved.
-             */
             semester:
               selectedSemester,
 
@@ -1295,17 +1200,6 @@ export default function Students({
               admission_no:
                 student.admissionNo,
 
-              /*
-               * SMALLINT VALUE ONLY
-               *
-               * Example:
-               * 1
-               * 2
-               * 3
-               *
-               * NOT:
-               * "Semester 1"
-               */
               semester:
                 Number(
                   selectedSemester,
@@ -1372,9 +1266,7 @@ export default function Students({
             "Excel import failed.",
         );
       } finally {
-        setImporting(
-          false,
-        );
+        setImporting(false);
       }
     };
 
@@ -1442,8 +1334,7 @@ export default function Students({
     );
 
   const selectedCourseText =
-    course ===
-    "All Courses"
+    course === "All Courses"
       ? "All Courses"
       : COURSE_LABELS[
           course
@@ -1863,7 +1754,7 @@ export default function Students({
 
       </section>
 
-            {/* ======================================================
+      {/* ======================================================
           STUDENT TABLE
       ====================================================== */}
 
@@ -2067,19 +1958,11 @@ export default function Students({
 
             </div>
 
-
             {/* ==================================================
                 MOBILE STUDENT CARDS
             ================================================== */}
 
-            <div
-              className="studentMobileList"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
+            <div className="studentMobileList">
 
               {filtered.map(
                 (student) => (
@@ -2090,14 +1973,6 @@ export default function Students({
                       student.admissionNo
                     }
                     className="studentMobileCard"
-                    style={{
-                      border: "1px solid #111111",
-                      borderRadius: "14px",
-                      background: "#FFFFFF",
-                      padding: "16px",
-                      boxShadow: "0 2px 8px rgba(15, 23, 42, 0.05)",
-                      overflow: "hidden",
-                    }}
                   >
 
                     <div>
@@ -2175,13 +2050,6 @@ export default function Students({
                     <button
                       type="button"
                       className="tableAction"
-                      style={{
-                        background: "#7A1F2B",
-                        color: "#FFFFFF",
-                        border: "1px solid #7A1F2B",
-                        borderRadius: "10px",
-                        fontWeight: 800,
-                      }}
                       onClick={(
                         event,
                       ) => {
@@ -2253,7 +2121,6 @@ export default function Students({
 
       </section>
 
-
       {/* ======================================================
           STUDENT VIEW MODAL
       ====================================================== */}
@@ -2286,8 +2153,6 @@ export default function Students({
               event.stopPropagation();
             }}
           >
-
-            {/* HEADER */}
 
             <div className="studentModalHeader">
 
@@ -2327,9 +2192,6 @@ export default function Students({
 
             </div>
 
-
-            {/* DETAILS */}
-
             <div className="studentDetailsGrid">
 
               <div className="studentDetailItem">
@@ -2347,7 +2209,6 @@ export default function Students({
 
               </div>
 
-
               <div className="studentDetailItem">
 
                 <span>
@@ -2361,7 +2222,6 @@ export default function Students({
                 </strong>
 
               </div>
-
 
               <div className="studentDetailItem">
 
@@ -2377,7 +2237,6 @@ export default function Students({
 
               </div>
 
-
               <div className="studentDetailItem">
 
                 <span>
@@ -2392,7 +2251,6 @@ export default function Students({
                 </strong>
 
               </div>
-
 
               <div className="studentDetailItem">
 
@@ -2411,7 +2269,6 @@ export default function Students({
 
               </div>
 
-
               <div className="studentDetailItem">
 
                 <span>
@@ -2425,7 +2282,6 @@ export default function Students({
                 </strong>
 
               </div>
-
 
               <div className="studentDetailItem">
 
@@ -2442,9 +2298,6 @@ export default function Students({
               </div>
 
             </div>
-
-
-            {/* ACTIONS */}
 
             <div className="studentModalActions">
 
@@ -2494,7 +2347,6 @@ export default function Students({
 
               </button>
 
-
               <button
                 type="button"
                 className="dangerButton"
@@ -2533,7 +2385,6 @@ export default function Students({
 
       )}
 
-
       {/* ======================================================
           EDIT STUDENT MODAL
       ====================================================== */}
@@ -2569,8 +2420,6 @@ export default function Students({
             }}
           >
 
-            {/* HEADER */}
-
             <div className="studentModalHeader">
 
               <div>
@@ -2603,12 +2452,7 @@ export default function Students({
 
             </div>
 
-
-            {/* FORM */}
-
             <div className="studentEditGrid">
-
-              {/* REG NO */}
 
               <label>
 
@@ -2635,9 +2479,6 @@ export default function Students({
 
               </label>
 
-
-              {/* NAME */}
-
               <label>
 
                 <span>
@@ -2663,9 +2504,6 @@ export default function Students({
 
               </label>
 
-
-              {/* ADMISSION NO */}
-
               <label>
 
                 <span>
@@ -2689,9 +2527,6 @@ export default function Students({
                 />
 
               </label>
-
-
-              {/* CAP ID */}
 
               <label>
 
@@ -2717,9 +2552,6 @@ export default function Students({
                 />
 
               </label>
-
-
-              {/* COURSE */}
 
               <label>
 
@@ -2765,9 +2597,6 @@ export default function Students({
 
               </label>
 
-
-              {/* SEMESTER */}
-
               <label>
 
                 <span>
@@ -2811,9 +2640,6 @@ export default function Students({
 
               </label>
 
-
-              {/* STATUS */}
-
               <label>
 
                 <span>
@@ -2850,9 +2676,6 @@ export default function Students({
 
             </div>
 
-
-            {/* EDIT ACTIONS */}
-
             <div className="studentModalActions">
 
               <button
@@ -2869,7 +2692,6 @@ export default function Students({
               >
                 Cancel
               </button>
-
 
               <button
                 type="button"
@@ -2903,6 +2725,108 @@ export default function Students({
 
       )}
 
+      {/* ======================================================
+          RESPONSIVE FIX
+          
+          Desktop:
+          - Table visible
+          - Mobile cards hidden
+
+          Mobile:
+          - Table hidden
+          - Mobile cards visible
+      ====================================================== */}
+
+      <style jsx>{`
+        .studentMobileList {
+          display: none;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .studentTableScroll {
+          display: block;
+        }
+
+        .studentMobileCard {
+          border: 1px solid #111111;
+          border-radius: 14px;
+          background: #ffffff;
+          padding: 16px;
+          box-shadow: 0 2px 8px
+            rgba(15, 23, 42, 0.05);
+          overflow: hidden;
+        }
+
+        .studentMobileCard > div:first-child {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .studentMobileCard strong {
+          font-size: 17px;
+          font-weight: 800;
+        }
+
+        .studentMobileCard dl {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          margin: 14px 0;
+        }
+
+        .studentMobileCard dl > div {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .studentMobileCard dt {
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+        }
+
+        .studentMobileCard dd {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 600;
+          color: #172033;
+        }
+
+        .studentMobileCard > .tableAction {
+          width: 100%;
+          justify-content: center;
+          background: #7a1f2b;
+          color: #ffffff;
+          border: 1px solid #7a1f2b;
+          border-radius: 10px;
+          font-weight: 800;
+        }
+
+        @media (max-width: 768px) {
+          .studentTableScroll {
+            display: none;
+          }
+
+          .studentMobileList {
+            display: flex;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .studentTableScroll {
+            display: block;
+          }
+
+          .studentMobileList {
+            display: none;
+          }
+        }
+      `}</style>
+
     </div>
   );
-};
+}
