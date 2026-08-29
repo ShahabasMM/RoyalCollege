@@ -26,12 +26,7 @@ type AttendanceMatrix = Record<string, Record<number, AttendanceStatus>>;
    CONSTANTS
 ========================================================= */
 
-const COURSES = [
-  "B.A English",
-  "B.Com CA",
-  "B.Com Co-op",
-  "BBA Finance",
-];
+const COURSES = ["B.A English", "B.Com CA", "B.Com Co-op", "BBA Finance"];
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -144,6 +139,11 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
   const [mobileHour, setMobileHour] = useState(1);
 
+  // Hours that are already completely persisted in Supabase.
+  // This is intentionally separate from the local matrix: a completed
+  // matrix must not unlock the next hour until its save has succeeded.
+  const [savedMobileHours, setSavedMobileHours] = useState<number[]>([]);
+
   const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -228,6 +228,8 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
       setMobileHour(1);
 
+      setSavedMobileHours([]);
+
       const empty = createEmptyMatrix(filtered);
 
       if (filtered.length === 0) {
@@ -308,6 +310,18 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
       });
 
       setMatrix(empty);
+
+      // A session counts as saved for mobile progression only when every
+      // student has a valid persisted record for that hour.
+      const persistedHours = HOURS.filter((hour) =>
+        filtered.every((student) => {
+          const status = empty[student.id]?.[hour];
+
+          return status === "Present" || status === "Absent";
+        }),
+      );
+
+      setSavedMobileHours(persistedHours);
     } catch (err: any) {
       console.error("ATTENDANCE LOAD ERROR:", err);
 
@@ -441,7 +455,7 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
     }
 
     for (let i = 1; i < hour; i++) {
-      if (!isHourComplete(i)) {
+      if (!savedMobileHours.includes(i) || !isHourComplete(i)) {
         return false;
       }
     }
@@ -658,6 +672,14 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
   ========================================================= */
 
   async function saveMobileHour() {
+    if (!canOpenMobileHour(mobileHour)) {
+      setError(
+        `Hour ${mobileHour} is locked. Complete and save the previous hour first.`,
+      );
+
+      return;
+    }
+
     if (!isHourComplete(mobileHour)) {
       setError(
         `Please mark every student for Hour ${mobileHour} before saving.`,
@@ -683,6 +705,10 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
 
       await saveHour(mobileHour, data.user.id);
 
+      // Reload first so the next hour is unlocked only from data that was
+      // successfully persisted and read back from Supabase.
+      await loadAttendance();
+
       if (mobileHour < 5) {
         const next = mobileHour + 1;
 
@@ -692,8 +718,6 @@ export default function Attendance({ onBack }: { onBack: () => void }) {
       } else {
         setSuccess("All 5 hours saved successfully.");
       }
-
-      await loadAttendance();
     } catch (err: any) {
       console.error("MOBILE SAVE ERROR:", err);
 

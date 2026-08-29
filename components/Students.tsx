@@ -449,37 +449,26 @@ export default function Students({
     try {
       setPromoting(true);
 
-      let queryBuilder =
-        supabase
-          .from("students")
-          .update({
-            semester:
-              nextSemester,
-          })
-          .eq(
-            "semester",
-            selectedSemester,
-          )
-          .eq(
-            "status",
-            "Active",
-          );
+      const studentIds = studentsToPromote
+        .map((student) => student.id)
+        .filter((id): id is string => Boolean(id));
 
-      if (
-        course !== "All Courses"
-      ) {
-        queryBuilder =
-          queryBuilder.eq(
-            "course",
-            course,
-          );
-      }
-
-      const { error } =
-        await queryBuilder;
+      const { data: promotedCount, error } = await supabase.rpc(
+        "promote_students",
+        {
+          p_student_ids: studentIds,
+          p_to_semester: nextSemester,
+        },
+      );
 
       if (error) {
         throw error;
+      }
+
+      if (Number(promotedCount) !== studentIds.length) {
+        throw new Error(
+          "Promotion was not completed for all selected students. Please refresh and try again.",
+        );
       }
 
       await loadStudents();
