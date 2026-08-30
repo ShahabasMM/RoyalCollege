@@ -58,7 +58,7 @@ const blank = {
   password: "",
   confirmPassword: "",
   phone: "",
-  department: "Computer Science",
+  department: "English",
   role: "FACULTY" as Role,
   status: "Active" as "Active" | "Inactive",
 };
@@ -962,13 +962,13 @@ export default function StaffManagement({
                   })
                 }
               >
-                <option>Computer Science</option>
+                <option>English</option>
 
                 <option>Commerce</option>
 
-                <option>English</option>
+                <option>Arabic</option>
 
-                <option>Administration</option>
+                <option>Malayalam</option>
               </select>
             </label>
 
