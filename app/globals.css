@@ -1179,6 +1179,136 @@ td b {
 .professionalTable tbody tr:hover {
   background: #fafaff;
 }
+<<<<<<< HEAD
+=======
+
+/* Internal marks */
+.internalMarksModule .moduleHeader { margin: 20px 0 22px; }
+.internalMarksModule .moduleHeader h1 { margin: 7px 0 6px; font-size: 32px; letter-spacing: -.9px; }
+.internalMarksModule .moduleHeader p { margin: 0; color: #6b7280; font-size: 13px; }
+.internalMarksMessage { display: flex; align-items: center; gap: 9px; padding: 13px 16px; border-radius: 10px; margin: 0 0 18px; font-size: 12px; font-weight: 600; }
+.internalMarksMessage.error { color: #b91c1c; background: #fff1f2; border: 1px solid #fecdd3; }
+.internalMarksMessage.success { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.internalMarksFilters { padding: 20px; display: grid; grid-template-columns: 46px minmax(180px, 1fr) minmax(210px, .9fr) minmax(170px, .65fr); gap: 18px; align-items: center; margin-bottom: 22px; }
+.internalMarksFilterIcon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 12px; color: #2563eb; background: #eff6ff; }
+.internalMarksFilterTitle strong, .internalMarksFilterTitle span { display: block; }
+.internalMarksFilterTitle strong { color: #1f2937; font-size: 14px; }
+.internalMarksFilterTitle span { margin-top: 3px; color: #94a3b8; font-size: 11px; }
+.internalMarksFilters label, .internalMarksInput { color: #64748b; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.internalMarksFilters select, .internalMarksInput input { display: block; width: 100%; height: 43px; margin-top: 6px; padding: 0 12px; border: 1px solid #dbe2ea; border-radius: 8px; outline: none; color: #334155; font-size: 12px; background: #fff; }
+.internalMarksFilters select:focus, .internalMarksInput input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px #dbeafe; }
+.internalMarksTableCard { padding-bottom: 0; }
+.internalMarksTableTitle { display: flex; align-items: center; justify-content: space-between; padding: 19px 21px; border-bottom: 1px solid #edf0f3; }
+.internalMarksTableTitle h2 { margin: 0; font-size: 17px; }
+.internalMarksTableTitle p { margin: 4px 0 0; color: #94a3b8; font-size: 11px; }
+.internalMarksTableTitle > span { padding: 6px 10px; border-radius: 999px; color: #1d4ed8; background: #eff6ff; font-size: 11px; font-weight: 700; }
+.internalMarksTableWrap { overflow-x: auto; }
+.internalMarksTable { width: 100%; min-width: 800px; border-collapse: collapse; }
+.internalMarksTable th { padding: 13px 18px; color: #64748b; background: #f8fafc; text-align: left; font-size: 10px; letter-spacing: .06em; }
+.internalMarksTable td { padding: 14px 18px; border-top: 1px solid #edf0f3; color: #64748b; font-size: 12px; }
+.internalMarksTable tbody tr:hover { background: #fbfdff; }
+.internalMarksTable td strong { color: #1f2937; }
+.internalMarksPending { color: #b45309; font-weight: 700; }
+.internalMarksValue { color: #166534; font-weight: 700; }
+.internalMarkAddButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 7px; color: #fff; background: #2563eb; font-size: 11px; font-weight: 700; box-shadow: 0 2px 5px rgba(37, 99, 235, .2); }
+.internalMarkAddButton:hover:not(:disabled) { background: #1d4ed8; }
+.internalMarkAddButton:disabled { cursor: wait; opacity: .65; }
+.internalMarksEmpty { padding: 48px 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+.internalMarksModal { width: min(440px, calc(100vw - 32px)); }
+.internalMarksModal .modalHeader p { margin: 3px 0 0; color: #94a3b8; font-size: 11px; font-weight: 500; }
+.internalMarksInput { display: block; padding: 22px 22px 0; }
+.internalMarksInput span { color: #94a3b8; font-weight: 500; letter-spacing: 0; }
+.internalMarksModalActions { display: flex; justify-content: flex-end; gap: 9px; padding: 22px; }
+.internalMarksModalActions .secondaryButton { min-height: 34px; padding: 0 12px; border: 1px solid #dbe2ea; border-radius: 7px; color: #475569; background: #fff; font-size: 11px; font-weight: 700; }
+@media (max-width: 800px) { .internalMarksFilters { grid-template-columns: 46px 1fr; } .internalMarksFilterTitle { grid-column: 2; } .internalMarksFilters label { grid-column: 1 / -1; } }
+
+/* Dashboard module cards: professional elevated tiles */
+.moduleGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.moduleGrid .moduleCard {
+  --module-accent: #2563eb;
+  --module-tint: #eff6ff;
+  min-height: 172px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid #111827;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #4b5563, 0 12px 22px rgba(15, 23, 42, .12);
+  text-align: left;
+}
+.moduleGrid .moduleCard::before {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  left: 0;
+  top: 0;
+  border-radius: 13px 0 0 13px;
+  background: var(--module-accent);
+}
+.moduleGrid .moduleCard:hover {
+  border-color: #111827;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 0 #374151, 0 17px 28px rgba(15, 23, 42, .16);
+}
+.moduleGrid .moduleCard:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #374151, 0 7px 12px rgba(15, 23, 42, .10);
+}
+.moduleGrid .moduleCardIcon {
+  position: relative;
+  z-index: 1;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 17px;
+  border-radius: 12px;
+  color: var(--module-accent);
+  background: var(--module-tint);
+  box-shadow: none;
+}
+.moduleGrid .moduleCardIcon svg { width: 27px; height: 27px; stroke-width: 2; }
+.moduleGrid .moduleCardContent { position: relative; z-index: 1; }
+.moduleGrid .moduleCardContent h3 { margin-bottom: 5px; color: #172033; font-size: 15px; font-weight: 700; }
+.moduleGrid .moduleCardContent p { padding-right: 10px; color: #718096; font-size: 11px; line-height: 1.5; }
+.moduleGrid .moduleCardArrow { z-index: 1; right: 18px; top: 20px; color: #94a3b8; }
+.moduleGrid .moduleCard--attendance { --module-accent: #2563eb; --module-tint: #eaf2ff; }
+.moduleGrid .moduleCard--reports { --module-accent: #7c3aed; --module-tint: #f4edff; }
+.moduleGrid .moduleCard--students { --module-accent: #e11d48; --module-tint: #fff0f3; }
+.moduleGrid .moduleCard--announcements { --module-accent: #d97706; --module-tint: #fff7e7; }
+.moduleGrid .moduleCard--timetable { --module-accent: #0891b2; --module-tint: #e8fbff; }
+.moduleGrid .moduleCard--syllabus { --module-accent: #16a34a; --module-tint: #eafbf0; }
+.moduleGrid .moduleCard--doubts { --module-accent: #db2777; --module-tint: #fff0f8; }
+.moduleGrid .moduleCard--library { --module-accent: #9333ea; --module-tint: #f8efff; }
+.moduleGrid .moduleCard--online-class { --module-accent: #0284c7; --module-tint: #ebf8ff; }
+.moduleGrid .moduleCard--leave { --module-accent: #ea580c; --module-tint: #fff3ea; }
+.moduleGrid .moduleCard--staff { --module-accent: #475569; --module-tint: #f1f5f9; }
+.moduleGrid .moduleCard--internal-marks { --module-accent: #4f46e5; --module-tint: #eef2ff; }
+@media (max-width: 1100px) { .moduleGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .moduleGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .moduleGrid .moduleCard { min-height: 163px; padding: 16px; border-radius: 12px; }
+  .moduleGrid .moduleCardIcon { width: 50px; height: 50px; margin-bottom: 14px; border-radius: 11px; }
+  .moduleGrid .moduleCardIcon svg { width: 24px; height: 24px; }
+  .moduleGrid .moduleCardContent h3 { padding-right: 14px; font-size: 13px; line-height: 1.28; }
+  .moduleGrid .moduleCardContent p { padding-right: 0; font-size: 10px; line-height: 1.45; }
+  .moduleGrid .moduleCardArrow { right: 13px; top: 16px; }
+}
+
+/* Internal marks workspace */
+.internalMarksModule {
+  padding: 8px;
+  border: 1px solid #e4eaf2;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #eef5ff 0, #f8fbff 220px, transparent 220px);
+}
+.internalMarksModule > .backToDashboard { margin: 14px 12px 0; }
+.internalMarksModule .moduleHeader { margin: 18px 12px 22px; }
+.internalMarksModule .professionalTableCard { border-color: #dfe7f1; box-shadow: 0 5px 15px rgba(15, 55, 100, .06); }
+.internalMarksModule .internalMarksFilters { border-top: 3px solid #2563eb; }
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 .professionalTable .studentName {
   font-size: 13px;
   font-weight: 600;
@@ -14421,4 +14551,192 @@ td b {
   font-weight: 600;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+<<<<<<< HEAD
 }
+=======
+}
+
+/* Internal marks - subject totals and View action */
+.internalMarkTotals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+.internalMarkTotals span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 6px 9px;
+  border: 1px solid #e7edf5;
+  border-radius: 7px;
+  background: #fbfdff;
+}
+.internalMarkTotals b {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+}
+.internalMarkTotals strong {
+  color: #166534;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 800;
+}
+.internalMarksActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.internalMarkViewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #dbe4ef;
+  border-radius: 7px;
+  color: #334155;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.internalMarkViewButton:hover:not(:disabled) {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+.internalMarkViewButton:disabled {
+  opacity: .6;
+}
+.internalMarksNoSubject {
+  margin: 12px 22px 0;
+  color: #b45309;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.internalMarksViewModal {
+  width: min(620px, calc(100vw - 32px));
+}
+.internalMarksViewMeta {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 18px 22px 0;
+}
+.internalMarksViewMeta span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #475569;
+  background: #f1f5f9;
+  font-size: 10px;
+  font-weight: 700;
+}
+.internalMarksViewList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 22px 0;
+  max-height: 430px;
+  overflow-y: auto;
+}
+.internalMarksViewCard {
+  padding: 13px;
+  border: 1px solid #e5ebf2;
+  border-radius: 10px;
+  background: #fff;
+}
+.internalMarksViewSubject {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid #edf0f3;
+}
+.internalMarksViewSubject > div {
+  min-width: 0;
+}
+.internalMarksViewSubject strong,
+.internalMarksViewSubject span {
+  display: block;
+}
+.internalMarksViewSubject strong {
+  color: #1f2937;
+  font-size: 13px;
+}
+.internalMarksViewSubject span {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+}
+.internalMarksViewSubject > b {
+  color: #166534;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.internalMarksViewScores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 11px;
+}
+.internalMarksViewScores > div {
+  padding: 9px;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+.internalMarksViewScores span,
+.internalMarksViewScores strong {
+  display: block;
+}
+.internalMarksViewScores span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.internalMarksViewScores strong {
+  margin-top: 5px;
+  color: #1f2937;
+  font-size: 12px;
+}
+.internalMarksViewEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 42px 24px 10px;
+  color: #94a3b8;
+  text-align: center;
+}
+.internalMarksViewEmpty strong {
+  color: #475569;
+  font-size: 13px;
+}
+.internalMarksViewEmpty span {
+  max-width: 360px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 620px) {
+  .internalMarksActions {
+    flex-wrap: wrap;
+  }
+  .internalMarksViewScores {
+    grid-template-columns: 1fr;
+  }
+  .internalMarksViewSubject {
+    align-items: flex-start;
+  }
+}
+
+/* Monthly Report dashboard card */
+.moduleGrid .moduleCard--monthly-report { --module-accent: #527a3d; --module-tint: #eef6ea; }
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)

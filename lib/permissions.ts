@@ -37,7 +37,15 @@ export type Permission =
   | "staff.create"
   | "staff.edit"
   | "staff.delete"
+<<<<<<< HEAD
   | "staff.permissions";
+=======
+  | "staff.permissions"
+  | "internal_marks.view"
+  | "internal_marks.edit"
+  | "monthly_report.view"
+  | "monthly_report.edit";
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
 /* ============================================================
    ROLE TYPES
@@ -136,6 +144,13 @@ export const permissions = {
     "staff.delete",
     "staff.permissions",
   ],
+<<<<<<< HEAD
+=======
+
+  internalMarks: ["internal_marks.view", "internal_marks.edit"],
+
+  monthlyReport: ["monthly_report.view", "monthly_report.edit"],
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 } as const;
 
 /* ============================================================

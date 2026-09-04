@@ -46,6 +46,14 @@ export const rolePermissions:
     "staff.edit",
     "staff.delete",
     "staff.permissions",
+<<<<<<< HEAD
+=======
+
+    "internal_marks.view",
+    "internal_marks.edit",
+    "monthly_report.view",
+    "monthly_report.edit",
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
   ],
 
 
@@ -63,6 +71,14 @@ export const rolePermissions:
     "online.view",
 
     "leaves.view",
+<<<<<<< HEAD
+=======
+
+    "internal_marks.view",
+    "internal_marks.edit",
+    "monthly_report.view",
+    "monthly_report.edit",
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
   ],
 
 
@@ -75,4 +91,8 @@ export const rolePermissions:
 
     "leaves.view",
   ],
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)

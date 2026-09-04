@@ -13,8 +13,13 @@ import { supabase } from "@/lib/supabase";
 
 const COURSES = [
   "B.A English",
+<<<<<<< HEAD
   "B.Com Co-operation",
   "B.Com Computer Application",
+=======
+  "B.Com Co-op",
+  "B.Com CA",
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
   "BBA Finance",
 ];
 
@@ -198,7 +203,11 @@ export default function Timetable({
 
       setError(
         err?.message ||
+<<<<<<< HEAD
           "Unable to load timetable."
+=======
+        "Unable to load timetable."
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       );
     } finally {
       setLoading(false);
@@ -365,7 +374,11 @@ export default function Timetable({
 
       setError(
         err?.message ||
+<<<<<<< HEAD
           "Unable to save timetable."
+=======
+        "Unable to save timetable."
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       );
     } finally {
       setSaving(false);
@@ -384,10 +397,17 @@ export default function Timetable({
 
     const existing =
       entries[
+<<<<<<< HEAD
         cellKey(
           editingCell.day,
           editingCell.hour
         )
+=======
+      cellKey(
+        editingCell.day,
+        editingCell.hour
+      )
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       ];
 
     if (!existing?.id) {
@@ -444,7 +464,11 @@ export default function Timetable({
 
       setError(
         err?.message ||
+<<<<<<< HEAD
           "Unable to delete timetable entry."
+=======
+        "Unable to delete timetable entry."
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       );
     } finally {
       setSaving(false);
@@ -755,10 +779,17 @@ export default function Timetable({
 
                         const item =
                           entries[
+<<<<<<< HEAD
                             cellKey(
                               day,
                               hour
                             )
+=======
+                          cellKey(
+                            day,
+                            hour
+                          )
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
                           ];
 
                         return (
@@ -979,6 +1010,7 @@ export default function Timetable({
                   editingCell.hour
                 )
               ] && (
+<<<<<<< HEAD
                 <button
                   className="timetableV1Delete"
                   disabled={saving}
@@ -996,6 +1028,25 @@ export default function Timetable({
 
                 </button>
               )}
+=======
+                  <button
+                    className="timetableV1Delete"
+                    disabled={saving}
+                    onClick={
+                      deleteCell
+                    }
+                  >
+
+                    <Icon
+                      name="trash"
+                      size={14}
+                    />
+
+                    Delete
+
+                  </button>
+                )}
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
               <div className="timetableV1FooterRight">
 

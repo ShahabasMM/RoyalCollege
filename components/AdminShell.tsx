@@ -15,6 +15,11 @@ import Syllabus from "./Syllabus";
 import StaffManagement from "./StaffManagement";
 import Reports from "./Reports";
 import Library from "./Library";
+<<<<<<< HEAD
+=======
+import InternalMarks from "./InternalMarks";
+import MonthlyReport from "./MonthlyReport";
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
 import { modules } from "@/lib/modules";
 import { AppUser, hasPermission, Permission } from "@/lib/permissions";
@@ -35,6 +40,11 @@ export default function AdminShell({ user }: { user: AppUser }) {
     "online-class": "online.view",
     leave: "leaves.view",
     staff: "staff.view",
+<<<<<<< HEAD
+=======
+    "internal-marks": "internal_marks.view",
+    "monthly-report": "monthly_report.view",
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
   };
 
   const goTo = (id: string) => {
@@ -72,6 +82,15 @@ export default function AdminShell({ user }: { user: AppUser }) {
       case "library":
         return <Library onBack={() => setActive("dashboard")} user={user}/>;
 
+<<<<<<< HEAD
+=======
+      case "internal-marks":
+        return <InternalMarks onBack={() => setActive("dashboard")} user={user} />;
+
+      case "monthly-report":
+        return <MonthlyReport onBack={() => setActive("dashboard")} user={user} />;
+
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       case "timetable":
         return <Timetable onBack={() => setActive("dashboard")} user={user} />;
 

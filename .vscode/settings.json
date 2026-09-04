@@ -19,6 +19,10 @@
     "net"
   ],
   "[typescript]": {
+<<<<<<< HEAD
     "editor.defaultFormatter": "denoland.vscode-deno"
+=======
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
   }
 }

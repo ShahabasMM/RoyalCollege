@@ -13,4 +13,9 @@ export const modules: ModuleItem[] = [
   { id: "online-class", title: "Online Classes", description: "Create and manage online sessions.", icon: "video" },
   { id: "leave", title: "Leave Requests", description: "Review and approve student leave.", icon: "file" }
   ,{ id: "staff", title: "Faculty & Staff", description: "Manage faculty, staff accounts and module permissions.", icon: "users" }
+<<<<<<< HEAD
+=======
+  ,{ id: "internal-marks", title: "Internal Marks", description: "Enter and manage student internal marks.", icon: "clipboard" },
+  { id: "monthly-report", title: "Monthly Report", description: "Track faculty units and chapters completed each month.", icon: "file" }
+>>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 ];
