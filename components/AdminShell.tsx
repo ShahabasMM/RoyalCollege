@@ -15,11 +15,9 @@ import Syllabus from "./Syllabus";
 import StaffManagement from "./StaffManagement";
 import Reports from "./Reports";
 import Library from "./Library";
-<<<<<<< HEAD
-=======
+
 import InternalMarks from "./InternalMarks";
 import MonthlyReport from "./MonthlyReport";
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
 import { modules } from "@/lib/modules";
 import { AppUser, hasPermission, Permission } from "@/lib/permissions";
