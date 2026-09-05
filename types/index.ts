@@ -9,13 +9,9 @@ export type ModuleId =
   | "library"
   | "online-class"
   | "leave"
-<<<<<<< HEAD
-  | "staff";
-=======
   | "staff"
   | "internal-marks"
   | "monthly-report";
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
 export type ModuleItem = {
   id: ModuleId;
