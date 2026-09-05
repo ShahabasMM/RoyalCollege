@@ -28,6 +28,7 @@ function getToday(): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 }
 
@@ -35,30 +36,43 @@ function getModulePermission(moduleId: string): Permission | null {
   switch (moduleId) {
     case "attendance":
       return "attendance.view";
+
     case "reports":
       return "attendance.view";
+
     case "students":
       return "students.view";
+
     case "announcements":
       return "announcements.view";
+
     case "timetable":
       return "timetable.view";
+
     case "syllabus":
       return "syllabus.view";
+
     case "doubts":
       return "doubts.view";
+
     case "online-class":
       return "online.view";
+
     case "leave":
       return "leaves.view";
+
     case "staff":
       return "staff.view";
+
     case "library":
       return "library.view";
+
     case "internal-marks":
       return "internal_marks.view";
+
     case "monthly-report":
       return "monthly_report.view";
+
     default:
       return null;
   }
@@ -177,18 +191,21 @@ export default function Dashboard({
       note: "Registered students",
       icon: "users",
     },
+
     hasPermission(user, "attendance.view") && {
       label: "Present Today",
       value: stats.presentToday,
       note: "Students marked present",
       icon: "check",
     },
+
     hasPermission(user, "leaves.view") && {
       label: "Pending Leaves",
       value: stats.pendingLeaves,
       note: "Awaiting review",
       icon: "clock",
     },
+
     hasPermission(user, "doubts.view") && {
       label: "Open Doubts",
       value: stats.openDoubts,
@@ -389,15 +406,6 @@ export default function Dashboard({
           min-width: 0;
         }
 
-        /*
-         * Clean education/admin module cards:
-         * - white surface
-         * - 1px black border
-         * - individual colored left accent
-         * - light-gray elevation
-         * - icon + text in one row
-         * - no arrow
-         */
         .moduleButtonWrap :global(.moduleCard) {
           position: relative;
           display: flex;
@@ -603,6 +611,14 @@ export default function Dashboard({
           --module-icon-color: #0369a1;
         }
 
+        .moduleButtonWrap :global(.moduleCard--monthly-report) {
+          --module-bg: #f8f6ff;
+          --module-accent: #7c3aed;
+          --module-icon-bg: #f5f3ff;
+          --module-icon-border: #ddd6fe;
+          --module-icon-color: #7c3aed;
+        }
+
         @media (max-width: 1050px) {
           .statsGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -623,14 +639,79 @@ export default function Dashboard({
             white-space: normal;
           }
 
-          .statsGrid,
-          .moduleGrid {
+          .statsGrid {
             grid-template-columns: 1fr;
+          }
+
+          /*
+           * Keep module cards 2 per row on mobile.
+           */
+          .moduleGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
           }
 
           .modulesPanel {
             padding: 16px;
             border-radius: 16px;
+          }
+
+          .moduleButtonWrap :global(.moduleCard) {
+            min-height: 118px;
+            padding: 14px;
+            gap: 11px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardIcon) {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardIcon svg) {
+            width: 23px;
+            height: 23px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardContent h3) {
+            font-size: 14px;
+            line-height: 1.25;
+          }
+
+          .moduleButtonWrap :global(.moduleCardContent p) {
+            margin-top: 4px;
+            font-size: 11px;
+            line-height: 1.4;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .moduleGrid {
+            gap: 10px;
+          }
+
+          .moduleButtonWrap :global(.moduleCard) {
+            min-height: 112px;
+            padding: 12px;
+            gap: 9px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardIcon) {
+            width: 40px;
+            height: 40px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardIcon svg) {
+            width: 21px;
+            height: 21px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardContent h3) {
+            font-size: 13px;
+          }
+
+          .moduleButtonWrap :global(.moduleCardContent p) {
+            font-size: 10px;
           }
         }
       `}</style>
@@ -679,6 +760,7 @@ export default function Dashboard({
           <section className="sectionTitle">
             <div>
               <h2>Application Modules</h2>
+
               <p>
                 Open a module to manage its data and controls.
               </p>
