@@ -4,11 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 export async function POST(request: NextRequest) {
   try {
     /* ======================================================
-<<<<<<< HEAD
-       CHECK CURRENT ADMIN AUTHENTICATION
-=======
        CHECK AUTHORIZATION HEADER
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     ====================================================== */
 
     const authorization =
@@ -20,12 +16,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         {
-<<<<<<< HEAD
-          error:
-            "Authentication required.",
-=======
           error: "Authentication required.",
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
         },
         {
           status: 401,
@@ -33,17 +24,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD
-
     const accessToken =
       authorization.slice("Bearer ".length);
 
-
-=======
-    const accessToken =
-      authorization.slice("Bearer ".length);
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        VERIFY CURRENT USER
     ====================================================== */
@@ -56,10 +39,6 @@ export async function POST(request: NextRequest) {
         accessToken
       );
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     if (
       currentAuthError ||
       !currentAuthData.user?.email
@@ -75,10 +54,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        FIND CALLER STAFF PROFILE
     ====================================================== */
@@ -98,10 +73,6 @@ export async function POST(request: NextRequest) {
         )
         .maybeSingle();
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     if (callerError) {
       return NextResponse.json(
         {
@@ -114,19 +85,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        FALLBACK FOR OLD ADMIN PROFILE
     ====================================================== */
 
     if (!callerProfile) {
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       const fallback =
         await supabaseAdmin
           .from("staff_profiles")
@@ -139,10 +102,6 @@ export async function POST(request: NextRequest) {
           )
           .maybeSingle();
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       if (fallback.error) {
         return NextResponse.json(
           {
@@ -155,17 +114,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-<<<<<<< HEAD
-
       callerProfile =
         fallback.data;
 
-
-=======
-      callerProfile =
-        fallback.data;
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       /* ====================================================
          LINK OLD PROFILE TO AUTH USER
       ==================================================== */
@@ -174,25 +125,6 @@ export async function POST(request: NextRequest) {
         callerProfile &&
         !callerProfile.auth_user_id
       ) {
-<<<<<<< HEAD
-
-        await supabaseAdmin
-          .from("staff_profiles")
-          .update({
-            auth_user_id:
-              currentAuthData.user.id,
-          })
-          .eq(
-            "id",
-            callerProfile.id
-          );
-
-      }
-
-    }
-
-
-=======
         const {
           error: linkError,
         } =
@@ -221,16 +153,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        CALLER PROFILE REQUIRED
     ====================================================== */
 
     if (!callerProfile) {
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -240,15 +167,8 @@ export async function POST(request: NextRequest) {
           status: 403,
         }
       );
-<<<<<<< HEAD
-
     }
 
-
-=======
-    }
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        CHECK STAFF CREATE PERMISSION
     ====================================================== */
@@ -257,21 +177,11 @@ export async function POST(request: NextRequest) {
       callerProfile.role ===
       "MAIN_ADMIN";
 
-<<<<<<< HEAD
-
-    if (!allowed) {
-
-      const {
-        data: permissionRow,
-        error:
-          permissionCheckError,
-=======
     if (!allowed) {
       const {
         data: permissionRow,
         error:
         permissionCheckError,
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       } =
         await supabaseAdmin
           .from("staff_permissions")
@@ -286,17 +196,9 @@ export async function POST(request: NextRequest) {
           )
           .maybeSingle();
 
-<<<<<<< HEAD
-
       if (
         permissionCheckError
       ) {
-
-=======
-      if (
-        permissionCheckError
-      ) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
         return NextResponse.json(
           {
             error:
@@ -306,31 +208,15 @@ export async function POST(request: NextRequest) {
             status: 500,
           }
         );
-<<<<<<< HEAD
-
       }
 
-
-=======
-      }
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       allowed =
         Boolean(
           permissionRow
         );
-<<<<<<< HEAD
-
-    }
-
-
-    if (!allowed) {
-
-=======
     }
 
     if (!allowed) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -340,15 +226,8 @@ export async function POST(request: NextRequest) {
           status: 403,
         }
       );
-<<<<<<< HEAD
-
     }
 
-
-=======
-    }
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        READ REQUEST BODY
     ====================================================== */
@@ -356,10 +235,6 @@ export async function POST(request: NextRequest) {
     const body =
       await request.json();
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     const {
       name,
       employeeId,
@@ -372,9 +247,6 @@ export async function POST(request: NextRequest) {
       permissions,
     } = body;
 
-<<<<<<< HEAD
-
-    /* ======================================================
        VALIDATION
 =======
     /* ======================================================
@@ -400,7 +272,6 @@ export async function POST(request: NextRequest) {
 
     /* ======================================================
        BASIC VALIDATION
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     ====================================================== */
 
     if (
@@ -409,10 +280,6 @@ export async function POST(request: NextRequest) {
       !email?.trim() ||
       !password
     ) {
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -422,22 +289,11 @@ export async function POST(request: NextRequest) {
           status: 400,
         }
       );
-<<<<<<< HEAD
-
-    }
-
-
-    if (
-      password.length < 6
-    ) {
-
-=======
     }
 
     if (
       password.length < 6
     ) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -447,61 +303,23 @@ export async function POST(request: NextRequest) {
           status: 400,
         }
       );
-<<<<<<< HEAD
-
-    }
-
-=======
     }
 
     /* ======================================================
        CLEAN VALUES
     ====================================================== */
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
     const cleanName =
       name.trim();
 
-<<<<<<< HEAD
-
     const cleanEmployeeId =
       employeeId.trim();
 
-
-=======
-    const cleanEmployeeId =
-      employeeId.trim();
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     const cleanEmail =
       email
         .trim()
         .toLowerCase();
 
-<<<<<<< HEAD
-
-    const cleanPhone =
-      phone?.trim() || null;
-
-
-    const cleanDepartment =
-      department?.trim() || null;
-
-
-    const cleanRole =
-      role || "FACULTY";
-
-
-    const cleanStatus =
-      status || "Active";
-
-
-    const cleanPermissions =
-      Array.isArray(permissions)
-        ? permissions
-        : [];
-
-=======
     const cleanPhone =
       typeof phone === "string"
         ? phone.trim() || null
@@ -679,7 +497,6 @@ export async function POST(request: NextRequest) {
         }
       );
     }
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
     /* ======================================================
        CHECK EXISTING STAFF PROFILE
@@ -688,11 +505,7 @@ export async function POST(request: NextRequest) {
     const {
       data: existingProfile,
       error:
-<<<<<<< HEAD
-        existingProfileError,
-=======
       existingProfileError,
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     } =
       await supabaseAdmin
         .from("staff_profiles")
@@ -702,17 +515,9 @@ export async function POST(request: NextRequest) {
         )
         .maybeSingle();
 
-<<<<<<< HEAD
-
     if (
       existingProfileError
     ) {
-
-=======
-    if (
-      existingProfileError
-    ) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -722,22 +527,11 @@ export async function POST(request: NextRequest) {
           status: 500,
         }
       );
-<<<<<<< HEAD
-
-    }
-
-
-    if (
-      existingProfile
-    ) {
-
-=======
     }
 
     if (
       existingProfile
     ) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -747,12 +541,6 @@ export async function POST(request: NextRequest) {
           status: 409,
         }
       );
-<<<<<<< HEAD
-
-    }
-
-
-    /* ======================================================
        CREATE SUPABASE AUTH USER
 
        IMPORTANT:
@@ -769,41 +557,12 @@ export async function POST(request: NextRequest) {
 
     /* ======================================================
        CREATE SUPABASE AUTH USER
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     ====================================================== */
 
     const {
       data: createdAuthData,
       error: createAuthError,
     } =
-<<<<<<< HEAD
-      await supabaseAdmin.auth.admin.createUser({
-
-        email:
-          cleanEmail,
-
-        password:
-          password,
-
-        email_confirm:
-          true,
-
-        user_metadata: {
-          name:
-            cleanName,
-
-          role:
-            cleanRole,
-
-          employee_id:
-            cleanEmployeeId,
-
-        },
-
-      });
-
-
-    /* ======================================================
        AUTH USER CREATION ERROR
 =======
       await supabaseAdmin.auth.admin.createUser(
@@ -832,16 +591,11 @@ export async function POST(request: NextRequest) {
 
     /* ======================================================
        AUTH USER ERROR
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     ====================================================== */
 
     if (
       createAuthError
     ) {
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -851,22 +605,11 @@ export async function POST(request: NextRequest) {
           status: 400,
         }
       );
-<<<<<<< HEAD
-
-    }
-
-
-    if (
-      !createdAuthData.user
-    ) {
-
-=======
     }
 
     if (
       !createdAuthData.user
     ) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -876,42 +619,23 @@ export async function POST(request: NextRequest) {
           status: 500,
         }
       );
-<<<<<<< HEAD
-
-    }
-
-
-    const newAuthUser =
-      createdAuthData.user;
-
-
-=======
     }
 
     const newAuthUser =
       createdAuthData.user;
 
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        CREATE STAFF PROFILE
     ====================================================== */
 
     const {
       data: newStaff,
-<<<<<<< HEAD
-      error: staffProfileError,
-=======
       error:
       staffProfileError,
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     } =
       await supabaseAdmin
         .from("staff_profiles")
         .insert({
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
           auth_user_id:
             newAuthUser.id,
 
@@ -935,20 +659,12 @@ export async function POST(request: NextRequest) {
 
           status:
             cleanStatus,
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
         })
         .select(
           "id, auth_user_id, name, employee_id, department, role, email, phone, status"
         )
         .single();
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        STAFF PROFILE ERROR
     ====================================================== */
@@ -956,23 +672,10 @@ export async function POST(request: NextRequest) {
     if (
       staffProfileError
     ) {
-<<<<<<< HEAD
-
-      /*
-       * If profile creation fails,
-       * remove the Auth user we just created.
-       */
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       await supabaseAdmin.auth.admin.deleteUser(
         newAuthUser.id
       );
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       return NextResponse.json(
         {
           error:
@@ -982,35 +685,19 @@ export async function POST(request: NextRequest) {
           status: 500,
         }
       );
-<<<<<<< HEAD
-
     }
 
-
-=======
-    }
-
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        INSERT PERMISSIONS
     ====================================================== */
 
     if (
-<<<<<<< HEAD
-      cleanPermissions.length > 0
-    ) {
-
-      const permissionRows =
-        cleanPermissions.map(
-          (permission: string) => ({
-=======
       requestedPermissions.length >
       0
     ) {
       const permissionRows =
         requestedPermissions.map(
           (permission) => ({
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
             staff_id:
               newStaff.id,
 
@@ -1019,15 +706,6 @@ export async function POST(request: NextRequest) {
           })
         );
 
-<<<<<<< HEAD
-
-      const {
-        error:
-          permissionsError,
-      } =
-        await supabaseAdmin
-          .from("staff_permissions")
-=======
       console.log(
         "Permission rows to insert:",
         permissionRows
@@ -1041,30 +719,19 @@ export async function POST(request: NextRequest) {
           .from(
             "staff_permissions"
           )
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
           .insert(
             permissionRows
           );
 
-<<<<<<< HEAD
-
-      /* ====================================================
          PERMISSION ERROR
 =======
       /* ====================================================
          PERMISSION INSERT ERROR
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       ==================================================== */
 
       if (
         permissionsError
       ) {
-<<<<<<< HEAD
-
-        /*
-         * Roll back profile and Auth account.
-         */
-=======
         console.error(
           "STAFF PERMISSION INSERT ERROR:",
           permissionsError
@@ -1073,7 +740,6 @@ export async function POST(request: NextRequest) {
         /* -----------------------------------------------
            ROLLBACK STAFF PROFILE
         ----------------------------------------------- */
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
         await supabaseAdmin
           .from("staff_profiles")
@@ -1083,27 +749,18 @@ export async function POST(request: NextRequest) {
             newStaff.id
           );
 
-<<<<<<< HEAD
-=======
         /* -----------------------------------------------
            ROLLBACK AUTH USER
         ----------------------------------------------- */
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 
         await supabaseAdmin.auth.admin.deleteUser(
           newAuthUser.id
         );
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
         return NextResponse.json(
           {
             error:
               permissionsError.message,
-<<<<<<< HEAD
-=======
 
             code:
               permissionsError.code,
@@ -1116,36 +773,23 @@ export async function POST(request: NextRequest) {
 
             insertedPermissions:
               requestedPermissions,
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
           },
           {
             status: 500,
           }
         );
-<<<<<<< HEAD
-
-      }
-
-    }
-
-
-=======
       }
     }
 
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     /* ======================================================
        SUCCESS
     ====================================================== */
 
-<<<<<<< HEAD
-=======
     console.log(
       "STAFF CREATED SUCCESSFULLY:",
       newStaff.id
     );
 
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     return NextResponse.json(
       {
         success:
@@ -1160,40 +804,25 @@ export async function POST(request: NextRequest) {
         authUserId:
           newAuthUser.id,
 
-<<<<<<< HEAD
-=======
         permissions:
           requestedPermissions,
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       },
       {
         status: 201,
       }
     );
 
-<<<<<<< HEAD
-
   } catch (error: any) {
-
-=======
-  } catch (error: any) {
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     console.error(
       "CREATE STAFF API ERROR:",
       error
     );
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
     return NextResponse.json(
       {
         error:
           error?.message ||
           "Something went wrong while creating the staff account.",
-<<<<<<< HEAD
-=======
 
         details:
           error?.details,
@@ -1203,15 +832,10 @@ export async function POST(request: NextRequest) {
 
         hint:
           error?.hint,
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       },
       {
         status: 500,
       }
     );
-<<<<<<< HEAD
-
-=======
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
   }
 }

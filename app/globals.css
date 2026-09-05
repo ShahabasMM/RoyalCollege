@@ -1179,8 +1179,6 @@ td b {
 .professionalTable tbody tr:hover {
   background: #fafaff;
 }
-<<<<<<< HEAD
-=======
 
 /* Internal marks */
 .internalMarksModule .moduleHeader { margin: 20px 0 22px; }
@@ -1308,7 +1306,6 @@ td b {
 .internalMarksModule .moduleHeader { margin: 18px 12px 22px; }
 .internalMarksModule .professionalTableCard { border-color: #dfe7f1; box-shadow: 0 5px 15px rgba(15, 55, 100, .06); }
 .internalMarksModule .internalMarksFilters { border-top: 3px solid #2563eb; }
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 .professionalTable .studentName {
   font-size: 13px;
   font-weight: 600;
@@ -14551,9 +14548,6 @@ td b {
   font-weight: 600;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-<<<<<<< HEAD
-}
-=======
 }
 
 /* Internal marks - subject totals and View action */
@@ -14739,4 +14733,3 @@ td b {
 
 /* Monthly Report dashboard card */
 .moduleGrid .moduleCard--monthly-report { --module-accent: #527a3d; --module-tint: #eef6ea; }
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)

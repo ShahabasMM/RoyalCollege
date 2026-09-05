@@ -32,10 +32,7 @@ const labels: Record<string, string> = {
   onlineClasses: "Online Classes",
   leaves: "Leave Requests",
   staff: "Faculty & Staff",
-<<<<<<< HEAD
-=======
   monthlyReport: "Monthly Report",
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
 };
 
 const permissionLabels: Record<string, string> = {

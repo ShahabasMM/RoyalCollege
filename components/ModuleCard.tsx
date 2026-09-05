@@ -11,11 +11,7 @@ export default function ModuleCard({
   onClick: () => void;
 }) {
   return (
-<<<<<<< HEAD
-    <button className="moduleCard" onClick={onClick}>
-=======
     <button className={`moduleCard moduleCard--${module.id}`} onClick={onClick}>
->>>>>>> 1b61672 (Internal Mark & Monthly Report Added)
       <div className="moduleCardIcon"><Icon name={module.icon} size={24} /></div>
       <div className="moduleCardContent">
         <h3>{module.title}</h3>
