@@ -247,8 +247,6 @@ export async function POST(request: NextRequest) {
       permissions,
     } = body;
 
-       VALIDATION
-=======
     /* ======================================================
        DEBUG - SHOW EXACT PERMISSIONS FROM FRONTEND
     ====================================================== */
@@ -541,18 +539,6 @@ export async function POST(request: NextRequest) {
           status: 409,
         }
       );
-       CREATE SUPABASE AUTH USER
-
-       IMPORTANT:
-       These names are different from the current
-       authentication variables above.
-
-       currentAuthData
-       currentAuthError
-
-       createdAuthData
-       createAuthError
-=======
     }
 
     /* ======================================================
@@ -563,8 +549,6 @@ export async function POST(request: NextRequest) {
       data: createdAuthData,
       error: createAuthError,
     } =
-       AUTH USER CREATION ERROR
-=======
       await supabaseAdmin.auth.admin.createUser(
         {
           email:
@@ -723,8 +707,6 @@ export async function POST(request: NextRequest) {
             permissionRows
           );
 
-         PERMISSION ERROR
-=======
       /* ====================================================
          PERMISSION INSERT ERROR
       ==================================================== */
