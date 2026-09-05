@@ -1,3 +1,5 @@
+// Vercel deployment sync check
+
 "use client";
 
 import { useState } from "react";
