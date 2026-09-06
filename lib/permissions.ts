@@ -40,6 +40,8 @@ export type Permission =
   | "staff.permissions"
   | "internal_marks.view"
   | "internal_marks.edit"
+  | "result.view"
+  | "result.edit"
   | "monthly_report.view"
   | "monthly_report.edit";
 
@@ -142,6 +144,8 @@ export const permissions = {
   ],
 
   internalMarks: ["internal_marks.view", "internal_marks.edit"],
+
+  result: ["result.view", "result.edit"],
 
   monthlyReport: ["monthly_report.view", "monthly_report.edit"],
 } as const;

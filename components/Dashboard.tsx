@@ -70,6 +70,9 @@ function getModulePermission(moduleId: string): Permission | null {
     case "internal-marks":
       return "internal_marks.view";
 
+    case "result":
+      return "result.view";
+
     case "monthly-report":
       return "monthly_report.view";
 

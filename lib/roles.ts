@@ -49,6 +49,8 @@ export const rolePermissions:
 
     "internal_marks.view",
     "internal_marks.edit",
+    "result.view",
+    "result.edit",
     "monthly_report.view",
     "monthly_report.edit",
   ],
@@ -71,6 +73,8 @@ export const rolePermissions:
 
     "internal_marks.view",
     "internal_marks.edit",
+    "result.view",
+    "result.edit",
     "monthly_report.view",
     "monthly_report.edit",
   ],

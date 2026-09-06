@@ -1799,7 +1799,7 @@ export default function InternalMarks({
                               onClick={() => openEditor(student)}
                             >
                               <Icon name="plus" size={15} />
-                              Add Mark
+                              Add
                             </button>
                           )}
                         </div>
@@ -2286,6 +2286,15 @@ export default function InternalMarks({
           .imScoreGrid, .imMarkScores { grid-template-columns:1fr 1fr; }
         }
         @media (max-width:520px) {
+          .imTable { min-width:0; }
+          .imTable th:nth-child(1), .imTable td:nth-child(1),
+          .imTable th:nth-child(3), .imTable td:nth-child(3),
+          .imTable th:nth-child(4), .imTable td:nth-child(4),
+          .imTable th:nth-child(5), .imTable td:nth-child(5) { display:none; }
+          .imTable th:nth-child(2), .imTable td:nth-child(2) { width:auto; }
+          .imTable th:nth-child(6), .imTable td:nth-child(6) { width:145px; }
+          .imTable td { padding:11px 10px; }
+          .imStudentCell { min-width:0; }
           .imHero h1 { font-size:28px; }
           .imSelectorCard, .imStudentsHead { padding:14px; }
           .imSelectorGrid { grid-template-columns:1fr; }

@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   onlineClasses: "Online Classes",
   leaves: "Leave Requests",
   staff: "Faculty & Staff",
+  result: "Result",
   monthlyReport: "Monthly Report",
 };
 

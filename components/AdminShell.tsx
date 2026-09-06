@@ -20,6 +20,7 @@ import Library from "./Library";
 
 import InternalMarks from "./InternalMarks";
 import MonthlyReport from "./MonthlyReport";
+import Result from "./Result";
 
 import { modules } from "@/lib/modules";
 import { AppUser, hasPermission, Permission } from "@/lib/permissions";
@@ -41,6 +42,7 @@ export default function AdminShell({ user }: { user: AppUser }) {
     leave: "leaves.view",
     staff: "staff.view",
     "internal-marks": "internal_marks.view",
+    result: "result.view",
     "monthly-report": "monthly_report.view",
   };
 
@@ -84,6 +86,9 @@ export default function AdminShell({ user }: { user: AppUser }) {
 
       case "monthly-report":
         return <MonthlyReport onBack={() => setActive("dashboard")} user={user} />;
+
+      case "result":
+        return <Result onBack={() => setActive("dashboard")} user={user} />;
 
       case "timetable":
         return <Timetable onBack={() => setActive("dashboard")} user={user} />;

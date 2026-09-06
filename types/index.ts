@@ -11,6 +11,7 @@ export type ModuleId =
   | "leave"
   | "staff"
   | "internal-marks"
+  | "result"
   | "monthly-report";
 
 export type ModuleItem = {
