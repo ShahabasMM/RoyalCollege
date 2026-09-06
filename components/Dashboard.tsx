@@ -7,30 +7,21 @@ import { modules } from "@/lib/modules";
 import {
   AppUser,
   canAccess,
-  hasPermission,
   Permission,
 } from "@/lib/permissions";
 
-import { supabase } from "@/lib/supabase";
-
 import ModuleCard from "./ModuleCard";
 import Icon from "./Icon";
+import { ModuleCategory } from "@/types";
+import { supabase } from "@/lib/supabase";
 
-type DashboardStats = {
-  totalStudents: number;
-  presentToday: number;
-  pendingLeaves: number;
-  openDoubts: number;
-};
-
-function getToday(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
+const moduleTabs: Array<{ id: ModuleCategory; label: string; tone: string; icon: string }> = [
+  { id: "admission-enrollment", label: "Application", tone: "rose", icon: "users" },
+  { id: "academic-cell", label: "Academic Cell", tone: "blue", icon: "book" },
+  { id: "reports", label: "Reports", tone: "violet", icon: "activity" },
+  { id: "masters", label: "Masters", tone: "amber", icon: "settings" },
+  { id: "library", label: "Library", tone: "green", icon: "library" },
+];
 
 function getModulePermission(moduleId: string): Permission | null {
   switch (moduleId) {
@@ -88,97 +79,59 @@ export default function Dashboard({
   onModule: (id: string) => void;
   user: AppUser;
 }) {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalStudents: 0,
-    presentToday: 0,
-    pendingLeaves: 0,
-    openDoubts: 0,
-  });
-
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  async function loadDashboardData() {
-    setLoading(true);
-    setError("");
-
-    try {
-      const today = getToday();
-
-      let totalStudents = 0;
-      let presentToday = 0;
-      let pendingLeaves = 0;
-      let openDoubts = 0;
-
-      if (hasPermission(user, "students.view")) {
-        const { count, error } = await supabase
-          .from("students")
-          .select("id", { count: "exact", head: true });
-
-        if (error) {
-          throw new Error(`Students: ${error.message}`);
-        }
-
-        totalStudents = count ?? 0;
-      }
-
-      if (hasPermission(user, "attendance.view")) {
-        const { count, error } = await supabase
-          .from("attendance")
-          .select("id", { count: "exact", head: true })
-          .eq("attendance_date", today)
-          .eq("status", "Present");
-
-        if (error) {
-          throw new Error(`Attendance: ${error.message}`);
-        }
-
-        presentToday = count ?? 0;
-      }
-
-      if (hasPermission(user, "leaves.view")) {
-        const { count, error } = await supabase
-          .from("leave_requests")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "Pending");
-
-        if (error) {
-          throw new Error(`Leave Requests: ${error.message}`);
-        }
-
-        pendingLeaves = count ?? 0;
-      }
-
-      if (hasPermission(user, "doubts.view")) {
-        const { count, error } = await supabase
-          .from("doubts")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "Open");
-
-        if (error) {
-          throw new Error(`Doubts: ${error.message}`);
-        }
-
-        openDoubts = count ?? 0;
-      }
-
-      setStats({
-        totalStudents,
-        presentToday,
-        pendingLeaves,
-        openDoubts,
-      });
-    } catch (err: any) {
-      console.error("DASHBOARD DATA ERROR:", err);
-      setError(err?.message ?? "Unable to load dashboard data.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [loadingBooks, setLoadingBooks] = useState(true);
+  const [activeTab, setActiveTab] = useState<ModuleCategory>(moduleTabs[0].id);
+  const [moduleSearch, setModuleSearch] = useState("");
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    async function loadTotalStudents() {
+      if (!canAccess(user, "students.view")) {
+        setLoadingStudents(false);
+        return;
+      }
+
+      const { count, error: studentsError } = await supabase
+        .from("students")
+        .select("id", { count: "exact", head: true });
+
+      if (studentsError) {
+        setError(`Students: ${studentsError.message}`);
+      } else {
+        setTotalStudents(count ?? 0);
+      }
+
+      setLoadingStudents(false);
+    }
+
+    loadTotalStudents();
+  }, [user]);
+
+  useEffect(() => {
+    async function loadTotalBooks() {
+      if (!canAccess(user, "library.view")) {
+        setLoadingBooks(false);
+        return;
+      }
+
+      const { count, error: booksError } = await supabase
+        .from("library_books")
+        .select("id", { count: "exact", head: true });
+
+      if (booksError) {
+        setError(`Library: ${booksError.message}`);
+      } else {
+        setTotalBooks(count ?? 0);
+      }
+
+      setLoadingBooks(false);
+    }
+
+    loadTotalBooks();
+  }, [user]);
 
   const displayDate = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -186,41 +139,6 @@ export default function Dashboard({
     month: "long",
     year: "numeric",
   }).format(new Date());
-
-  const statCards = [
-    hasPermission(user, "students.view") && {
-      label: "Total Students",
-      value: stats.totalStudents,
-      note: "Registered students",
-      icon: "users",
-    },
-
-    hasPermission(user, "attendance.view") && {
-      label: "Present Today",
-      value: stats.presentToday,
-      note: "Students marked present",
-      icon: "check",
-    },
-
-    hasPermission(user, "leaves.view") && {
-      label: "Pending Leaves",
-      value: stats.pendingLeaves,
-      note: "Awaiting review",
-      icon: "clock",
-    },
-
-    hasPermission(user, "doubts.view") && {
-      label: "Open Doubts",
-      value: stats.openDoubts,
-      note: "Need attention",
-      icon: "help",
-    },
-  ].filter(Boolean) as Array<{
-    label: string;
-    value: number;
-    note: string;
-    icon: string;
-  }>;
 
   const visibleModules = modules.filter((module) => {
     const requiredPermission = getModulePermission(module.id);
@@ -231,6 +149,23 @@ export default function Dashboard({
 
     return canAccess(user, requiredPermission);
   });
+
+  const normalizedSearch = moduleSearch.trim().toLowerCase();
+  const searchMatches = normalizedSearch
+    ? visibleModules.filter((module) =>
+        `${module.title} ${module.description}`.toLowerCase().includes(normalizedSearch),
+      )
+    : [];
+  const selectedModules = normalizedSearch
+    ? searchMatches
+    : visibleModules.filter((module) => module.category === activeTab);
+
+  useEffect(() => {
+    if (!normalizedSearch || !searchMatches.length) return;
+
+    const matchingCategory = searchMatches[0].category;
+    if (matchingCategory !== activeTab) setActiveTab(matchingCategory);
+  }, [normalizedSearch, searchMatches, activeTab]);
 
   return (
     <>
@@ -249,10 +184,45 @@ export default function Dashboard({
 
         .pageIntro {
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           justify-content: space-between;
           gap: 24px;
           margin-bottom: 26px;
+        }
+
+        .introBrand {
+          display: flex;
+          align-items: center;
+          gap: 49px;
+          min-width: 0;
+        }
+
+        .dashboardLogo {
+          display: block;
+          width: min(330px, 52vw);
+          height: auto;
+          object-fit: contain;
+          object-position: left center;
+        }
+
+        .introBrand .statCard {
+          width: 300px;
+          min-width: 300px;
+        }
+
+        .summaryCards {
+          display: flex;
+          align-items: stretch;
+          gap: 14px;
+          padding: 10px;
+          border: 1px solid #e2e2e2;
+          border-radius: 18px;
+          background: #f1f1f1;
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .introBrand .statCard--books {
+          background: #fff;
         }
 
         .eyebrow {
@@ -285,7 +255,7 @@ export default function Dashboard({
           border: 1px solid #dbe3ec;
           border-radius: 12px;
           background: #fff;
-          color: #475569;
+          color: #111827;
           box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
           font-size: 12px;
           font-weight: 700;
@@ -305,10 +275,75 @@ export default function Dashboard({
 
         .statsGrid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 14px;
+          grid-template-columns: 1fr;
           margin-bottom: 32px;
         }
+
+        .moduleSearch {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+
+        .moduleSearchIcon {
+          position: absolute;
+          top: 50%;
+          left: 16px;
+          display: grid;
+          place-items: center;
+          color: #475569;
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+
+        .moduleSearch input {
+          width: 100%;
+          height: 52px;
+          padding: 0 108px 0 48px;
+          border: 1px solid #111827;
+          border-radius: 13px;
+          outline: 0;
+          background: #f1f5f9;
+          color: #111827;
+          font-family: "Poppins", sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025);
+          transition: border-color 160ms ease, box-shadow 160ms ease;
+        }
+
+        .moduleSearch input::placeholder { color: #94a3b8; font-weight: 500; }
+        .moduleSearch:focus-within { box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1); }
+        .moduleSearch input:focus { border-color: #111827; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025); }
+
+        .moduleSearchButton {
+          position: absolute;
+          top: 9px;
+          right: 9px;
+          display: grid;
+          place-items: center;
+          width: 38px;
+          height: 38px;
+          padding: 0;
+          border: 0;
+          border-radius: 10px;
+          background: #1e293b;
+          color: #fff;
+          font-family: "Poppins", sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 160ms ease, transform 160ms ease;
+        }
+
+        .moduleSearchButton:hover { background: #0f172a; transform: translateY(-1px); }
+        .moduleSearchButton:active { transform: translateY(0); }
 
         .statCard {
           display: flex;
@@ -316,9 +351,9 @@ export default function Dashboard({
           gap: 14px;
           min-height: 108px;
           padding: 16px;
-          border: 1px solid #d8e1eb;
+          border: 1px solid #111827;
           border-radius: 16px;
-          background: linear-gradient(145deg, #ffffff, #f8fafc);
+          background: #fff;
           box-shadow:
             0 3px 0 rgba(15, 23, 42, 0.05),
             0 10px 22px rgba(15, 23, 42, 0.07);
@@ -373,7 +408,7 @@ export default function Dashboard({
         .modulesPanel {
           padding: 22px;
           border: 1px solid #dbe4ee;
-          border-radius: 20px;
+          border-radius: 0 0 20px 20px;
           background: linear-gradient(145deg, #f8fafc, #eef2f7);
           box-shadow:
             0 3px 0 rgba(15, 23, 42, 0.03),
@@ -399,10 +434,111 @@ export default function Dashboard({
           font-size: 13px;
         }
 
+        .moduleTabs {
+          display: flex;
+          align-items: stretch;
+          gap: 4px;
+          width: 100%;
+          margin: 0 0 -1px;
+          padding: 5px;
+          border: 1px solid #dbe3ed;
+          border-bottom: 0;
+          border-radius: 20px 20px 0 0;
+          background: rgba(248, 250, 252, 0.76);
+          position: relative;
+          z-index: 2;
+        }
+
+        .moduleTab {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 9px;
+          flex: 1 1 0;
+          min-width: 0;
+          min-height: 52px;
+          padding: 8px 13px;
+          border: 1px solid #111827;
+          border-radius: 13px;
+          background: #334155;
+          color: #fff;
+          font-family: "Poppins", sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          line-height: 1.15;
+          text-align: center;
+          white-space: normal;
+          cursor: pointer;
+          transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+        }
+
+        .moduleTab:hover {
+          transform: translateY(-1px);
+          border-color: rgba(255, 255, 255, 0.65);
+          filter: brightness(0.9);
+        }
+
+        .moduleTab:focus-visible {
+          outline: 3px solid rgba(37, 99, 235, 0.22);
+          outline-offset: 2px;
+        }
+
+        .moduleTab--active {
+          border-color: #111827;
+          background: #1e293b;
+          color: #fff;
+          box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.36), inset 0 -1px 2px rgba(255, 255, 255, 0.08);
+          transform: translateY(2px);
+        }
+
+        .moduleTabIcon {
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+          color: #fff;
+        }
+
+        .moduleTab > span:nth-child(2) {
+          min-width: 0;
+          overflow-wrap: break-word;
+          word-break: normal;
+          white-space: normal;
+        }
+
+        .moduleTab--rose.moduleTab--active { border-color: #111827; background: #7f1d1d; color: #fff; }
+        .moduleTab--blue.moduleTab--active { border-color: #111827; background: #1e3a8a; color: #fff; }
+        .moduleTab--violet.moduleTab--active { border-color: #111827; background: #4c1d95; color: #fff; }
+        .moduleTab--amber.moduleTab--active { border-color: #111827; background: #92400e; color: #fff; }
+        .moduleTab--rose { background: #7a1414; }
+        .moduleTab--blue { background: #133285; }
+        .moduleTab--violet { background: #831991; }
+        .moduleTab--amber { background: #9d4a0b; }
+        .moduleTab--green { background: #0d5126; }
+        .moduleTab--green.moduleTab--active { border-color: #0e131e; background: #166534; color: #fff; }
+
+        .moduleSearchResult {
+          margin: -8px 0 18px;
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 600;
+          text-align: center;
+        }
+
+        .emptyModules {
+          padding: 34px 20px;
+          border: 1px dashed #cbd5e1;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.45);
+          color: #64748b;
+          font-size: 13px;
+          font-weight: 600;
+          text-align: center;
+        }
+
         .moduleGrid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 16px;
+          gap: 17px;
         }
 
         .moduleButtonWrap {
@@ -542,6 +678,22 @@ export default function Dashboard({
           --module-icon-color: #059669;
         }
 
+        .moduleButtonWrap :global(.moduleCard--admission) {
+          --module-bg: #fff5f7;
+          --module-accent: #e11d48;
+          --module-icon-bg: #fff1f2;
+          --module-icon-border: #fecdd3;
+          --module-icon-color: #e11d48;
+        }
+
+        .moduleButtonWrap :global(.moduleCard--fee-management) {
+          --module-bg: #fffaf0;
+          --module-accent: #d97706;
+          --module-icon-bg: #fffbeb;
+          --module-icon-border: #fde68a;
+          --module-icon-color: #d97706;
+        }
+
         .moduleButtonWrap :global(.moduleCard--announcements) {
           --module-bg: #fffaf0;
           --module-accent: #d97706;
@@ -623,10 +775,6 @@ export default function Dashboard({
         }
 
         @media (max-width: 1050px) {
-          .statsGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
           .moduleGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -636,6 +784,27 @@ export default function Dashboard({
           .pageIntro {
             align-items: flex-start;
             flex-direction: column;
+          }
+
+          .introBrand {
+            width: 100%;
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 14px;
+          }
+
+          .summaryCards {
+            width: 100%;
+            flex-direction: column;
+          }
+
+          .introBrand .statCard {
+            width: 100%;
+            min-width: 0;
+          }
+
+          .dashboardLogo {
+            width: min(280px, 80vw);
           }
 
           .dateBox {
@@ -651,12 +820,27 @@ export default function Dashboard({
            */
           .moduleGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+            gap: 17px;
           }
 
           .modulesPanel {
             padding: 16px;
             border-radius: 16px;
+          }
+
+          .moduleTabs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+            width: 100%;
+            margin: 0 0 -1px;
+            border-radius: 16px 16px 0 0;
+          }
+
+          .moduleTab {
+            min-height: 47px;
+            padding: 7px 8px;
+            font-size: 13px;
           }
 
           .moduleButtonWrap :global(.moduleCard) {
@@ -689,8 +873,17 @@ export default function Dashboard({
         }
 
         @media (max-width: 420px) {
+          .moduleTabs {
+            grid-template-columns: 1fr;
+          }
+
+          .moduleTab {
+            min-height: 43px;
+            font-size: 12px;
+          }
+
           .moduleGrid {
-            gap: 10px;
+            gap: 17px;
           }
 
           .moduleButtonWrap :global(.moduleCard) {
@@ -721,17 +914,34 @@ export default function Dashboard({
 
       <main className="dashboardRoot">
         <section className="pageIntro">
-          <div>
-            <div className="eyebrow">
-              Royal College of Arts and Science, Thrithala
+          <div className="introBrand">
+            <img
+              className="dashboardLogo"
+              src="/icons/college-logo.png"
+              alt="Royal College of Arts and Science Thrithala"
+            />
+            <div className="summaryCards">
+              <div className="statCard">
+                <div className="statIcon">
+                  <Icon name="users" size={21} />
+                </div>
+                <div>
+                  <span>Total Students</span>
+                  <strong>{loadingStudents ? "—" : totalStudents.toLocaleString()}</strong>
+                  <small>Registered students</small>
+                </div>
+              </div>
+              <div className="statCard statCard--books">
+                <div className="statIcon">
+                  <Icon name="library" size={21} />
+                </div>
+                <div>
+                  <span>Total Books</span>
+                  <strong>{loadingBooks ? "—" : totalBooks.toLocaleString()}</strong>
+                  <small>Library books</small>
+                </div>
+              </div>
             </div>
-
-            <h1>Dashboard</h1>
-
-            <p>
-              Manage the student application from one simple
-              administration workspace.
-            </p>
           </div>
 
           <div className="dateBox">{displayDate}</div>
@@ -740,45 +950,66 @@ export default function Dashboard({
         {error && <div className="errorBox">{error}</div>}
 
         <section className="statsGrid">
-          {statCards.map((card) => (
-            <div className="statCard" key={card.label}>
-              <div className="statIcon">
-                <Icon name={card.icon} size={21} />
-              </div>
-
-              <div>
-                <span>{card.label}</span>
-
-                <strong>
-                  {loading ? "—" : card.value.toLocaleString()}
-                </strong>
-
-                <small>{card.note}</small>
-              </div>
-            </div>
-          ))}
+          <label className="moduleSearch">
+            <span className="moduleSearchIcon"><Icon name="search" size={20} /></span>
+            <input
+              type="search"
+              value={moduleSearch}
+              onChange={(event) => setModuleSearch(event.target.value)}
+              placeholder="Search modules..."
+              aria-label="Search dashboard modules"
+            />
+            <button
+              type="button"
+              className="moduleSearchButton"
+              onClick={() => setModuleSearch((value) => value.trim())}
+              aria-label="Search modules"
+            >
+              <Icon name="search" size={16} />
+            </button>
+          </label>
         </section>
+
+        <div className="moduleTabs" role="tablist" aria-label="Application module categories">
+          {moduleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`moduleTab moduleTab--${tab.tone}${activeTab === tab.id ? " moduleTab--active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span className="moduleTabIcon"><Icon name={tab.icon} size={20} /></span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
         <section className="modulesPanel">
           <section className="sectionTitle">
             <div>
-              <h2>Application Modules</h2>
+              <h2>{normalizedSearch ? "Search Results" : "Application Modules"}</h2>
 
               <p>
-                Open a module to manage its data and controls.
+                {normalizedSearch
+                  ? `${selectedModules.length} matching module${selectedModules.length === 1 ? "" : "s"}`
+                  : "Open a module to manage its data and controls."}
               </p>
             </div>
           </section>
 
           <section className="moduleGrid">
-            {visibleModules.map((module) => (
+            {selectedModules.length ? selectedModules.map((module) => (
               <div className="moduleButtonWrap" key={module.id}>
                 <ModuleCard
                   module={module}
                   onClick={() => onModule(module.id)}
                 />
               </div>
-            ))}
+            )) : (
+              <div className="emptyModules">No modules available in this category.</div>
+            )}
           </section>
         </section>
       </main>

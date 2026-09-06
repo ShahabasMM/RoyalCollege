@@ -1,5 +1,7 @@
 export type ModuleId =
   | "attendance"
+  | "admission"
+  | "fee-management"
   | "reports"
   | "students"
   | "announcements"
@@ -14,11 +16,19 @@ export type ModuleId =
   | "result"
   | "monthly-report";
 
+export type ModuleCategory =
+  | "admission-enrollment"
+  | "academic-cell"
+  | "reports"
+  | "masters"
+  | "library";
+
 export type ModuleItem = {
   id: ModuleId;
   title: string;
   description: string;
   icon: string;
+  category: ModuleCategory;
 };
 
 export type Student = {
