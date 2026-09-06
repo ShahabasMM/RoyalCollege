@@ -11,6 +11,7 @@ type Student = {
   id: string;
   name: string;
   admissionNo: string;
+  registerNo: string;
   course: string;
   semester: number;
 };
@@ -35,7 +36,16 @@ type InternalMark = {
   assignment_mark: number;
   seminar_mark: number;
   test_paper_mark: number;
-  attendance_mark: number;
+  attendance_mark: number; // kept for backward compatibility with older rows
+  class_performance_mark: number;
+  viva_voce_mark: number;
+  report_mark: number;
+  open_ended_assignment_mark: number;
+  open_ended_seminar_mark: number;
+  open_ended_test_mark: number;
+  open_ended_mark: number;
+  internal_theory_mark: number;
+  internal_practical_mark: number;
   total_mark: number;
   mark: number;
   created_at?: string;
@@ -85,11 +95,18 @@ export default function InternalMarks({
 
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
+  const [reportPickerOpen, setReportPickerOpen] = useState(false);
+  const [reportSubjectId, setReportSubjectId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [assignment, setAssignment] = useState("");
   const [seminar, setSeminar] = useState("");
   const [testPaper, setTestPaper] = useState("");
-  const [attendance, setAttendance] = useState("");
+  const [classPerformance, setClassPerformance] = useState("");
+  const [vivaVoce, setVivaVoce] = useState("");
+  const [report, setReport] = useState("");
+  const [openEndedAssignment, setOpenEndedAssignment] = useState("");
+  const [openEndedSeminar, setOpenEndedSeminar] = useState("");
+  const [openEndedTest, setOpenEndedTest] = useState("");
 
   // IMPORTANT: Course options must come from the Syllabus table, not from
   // the students table. A teacher may have a restricted/empty students
@@ -124,12 +141,23 @@ export default function InternalMarks({
     []
   );
 
-  const liveTotal = [
-    assignment,
-    seminar,
-    testPaper,
-    attendance,
-  ].reduce((sum, value) => sum + (Number(value) || 0), 0);
+  const liveTheoryTotal =
+    (Number(assignment) || 0) +
+    (Number(seminar) || 0) +
+    (Number(testPaper) || 0);
+
+  const livePracticalTotal =
+    (Number(classPerformance) || 0) +
+    (Number(vivaVoce) || 0) +
+    (Number(report) || 0);
+
+  const liveOpenEndedTotal =
+    (Number(openEndedAssignment) || 0) +
+    (Number(openEndedSeminar) || 0) +
+    (Number(openEndedTest) || 0);
+
+  const liveTotal =
+    liveTheoryTotal + livePracticalTotal + liveOpenEndedTotal;
 
   function normalizeMark(value: string) {
     if (value === "") return "";
@@ -147,16 +175,32 @@ export default function InternalMarks({
         // Load these independently. Promise.all() previously meant that a
         // restricted students query could prevent syllabus courses from
         // being placed into the dropdown at all.
-        const [studentResult, courseResult] = await Promise.all([
+        const [studentPrimaryResult, courseResult] = await Promise.all([
           supabase
             .from("students")
-            .select("id, name, admission_no, course, semester")
+            .select("id, name, register_no, admission_no, course, semester")
             .order("name"),
           supabase
             .from("syllabus_courses")
             .select("id, name")
             .order("name"),
         ]);
+
+        // Some installations use admission_no as the register number.
+        // Prefer register_no when the column exists, otherwise fall back
+        // without breaking the whole student/course loading flow.
+        let studentResult: any = studentPrimaryResult;
+
+        if (studentPrimaryResult.error) {
+          const fallbackResult = await supabase
+            .from("students")
+            .select("id, name, admission_no, course, semester")
+            .order("name");
+
+          if (!fallbackResult.error) {
+            studentResult = fallbackResult;
+          }
+        }
 
         let optionError = "";
 
@@ -172,11 +216,12 @@ export default function InternalMarks({
                 id: String(row.id),
                 name: String(row.name ?? "Unnamed student"),
                 admissionNo: String(row.admission_no ?? "—"),
+                registerNo: String(row.register_no ?? row.admission_no ?? "—"),
                 course: String(row.course ?? ""),
                 semester: Number(row.semester),
               }))
               .filter(
-                (student) =>
+                (student: Student) =>
                   student.course && Number.isFinite(student.semester)
               )
           );
@@ -301,6 +346,15 @@ export default function InternalMarks({
               seminar_mark,
               test_paper_mark,
               attendance_mark,
+              class_performance_mark,
+              viva_voce_mark,
+              report_mark,
+              open_ended_assignment_mark,
+              open_ended_seminar_mark,
+              open_ended_test_mark,
+              open_ended_mark,
+              internal_theory_mark,
+              internal_practical_mark,
               total_mark,
               mark,
               created_at,
@@ -350,7 +404,12 @@ export default function InternalMarks({
     setAssignment("");
     setSeminar("");
     setTestPaper("");
-    setAttendance("");
+    setClassPerformance("");
+    setVivaVoce("");
+    setReport("");
+    setOpenEndedAssignment("");
+    setOpenEndedSeminar("");
+    setOpenEndedTest("");
   }
 
   function openEditor(student: Student) {
@@ -374,7 +433,9 @@ export default function InternalMarks({
       setAssignment("");
       setSeminar("");
       setTestPaper("");
-      setAttendance("");
+      setClassPerformance("");
+      setVivaVoce("");
+      setReport("");
       return;
     }
 
@@ -386,12 +447,22 @@ export default function InternalMarks({
       setAssignment(numberText(existing.assignment_mark));
       setSeminar(numberText(existing.seminar_mark));
       setTestPaper(numberText(existing.test_paper_mark));
-      setAttendance(numberText(existing.attendance_mark));
+      setClassPerformance(numberText(existing.class_performance_mark));
+      setVivaVoce(numberText(existing.viva_voce_mark));
+      setReport(numberText(existing.report_mark));
+      setOpenEndedAssignment(numberText(existing.open_ended_assignment_mark));
+      setOpenEndedSeminar(numberText(existing.open_ended_seminar_mark));
+      setOpenEndedTest(numberText(existing.open_ended_test_mark));
     } else {
       setAssignment("");
       setSeminar("");
       setTestPaper("");
-      setAttendance("");
+      setClassPerformance("");
+      setVivaVoce("");
+      setReport("");
+      setOpenEndedAssignment("");
+      setOpenEndedSeminar("");
+      setOpenEndedTest("");
     }
   }
 
@@ -412,23 +483,52 @@ export default function InternalMarks({
       return;
     }
 
-    const rawValues = [
-      assignment,
-      seminar,
-      testPaper,
-      attendance,
+    const theoryValues = [assignment, seminar, testPaper].map(Number);
+    const practicalValues = [classPerformance, vivaVoce, report].map(
+      (value) => (value.trim() === "" ? 0 : Number(value))
+    );
+    const openEndedValues = [
+      openEndedAssignment,
+      openEndedSeminar,
+      openEndedTest,
+    ].map((value) => (value.trim() === "" ? 0 : Number(value)));
+
+    const allValues = [
+      ...theoryValues,
+      ...practicalValues,
+      ...openEndedValues,
     ];
 
-    const values = rawValues.map(Number);
-
     if (
-      rawValues.some((value) => !value.trim()) ||
-      values.some(
-        (value) => !Number.isFinite(value) || value < 0
-      )
+      [assignment, seminar, testPaper].some((value) => !value.trim()) ||
+      allValues.some((value) => !Number.isFinite(value) || value < 0)
     ) {
       setError(
-        "All four marks are required and must be non-negative numbers."
+        "Assignment, Seminar and Test are required. Practical and Open Ended fields are optional."
+      );
+      return;
+    }
+
+    const limits = [2, 3, 5, 10, 7, 3, 2, 4, 4];
+    const labels = [
+      "Assignment",
+      "Seminar",
+      "Test",
+      "Class Performance",
+      "Viva-Voce",
+      "Report",
+      "Open Ended Assignment",
+      "Open Ended Seminar",
+      "Open Ended Test",
+    ];
+
+    const exceedsLimit = allValues.findIndex(
+      (value, index) => value > limits[index]
+    );
+
+    if (exceedsLimit !== -1) {
+      setError(
+        `${labels[exceedsLimit]} cannot exceed ${limits[exceedsLimit]} marks.`
       );
       return;
     }
@@ -440,7 +540,13 @@ export default function InternalMarks({
       return;
     }
 
-    const total = values.reduce((sum, value) => sum + value, 0);
+    const theoryTotal =
+      theoryValues[0] + theoryValues[1] + theoryValues[2];
+    const practicalTotal =
+      practicalValues[0] + practicalValues[1] + practicalValues[2];
+    const openEndedTotal =
+      openEndedValues[0] + openEndedValues[1] + openEndedValues[2];
+    const total = theoryTotal + practicalTotal + openEndedTotal;
 
     setSaving(true);
     setError("");
@@ -452,10 +558,20 @@ export default function InternalMarks({
         subject_id: subject.id,
         course,
         semester: Number(semester),
-        assignment_mark: values[0],
-        seminar_mark: values[1],
-        test_paper_mark: values[2],
-        attendance_mark: values[3],
+        assignment_mark: theoryValues[0],
+        seminar_mark: theoryValues[1],
+        test_paper_mark: theoryValues[2],
+        // Legacy column retained so existing rows/schema remain compatible.
+        attendance_mark: 0,
+        class_performance_mark: practicalValues[0],
+        viva_voce_mark: practicalValues[1],
+        report_mark: practicalValues[2],
+        open_ended_assignment_mark: openEndedValues[0],
+        open_ended_seminar_mark: openEndedValues[1],
+        open_ended_test_mark: openEndedValues[2],
+        open_ended_mark: openEndedTotal,
+        internal_theory_mark: theoryTotal,
+        internal_practical_mark: practicalTotal,
         total_mark: total,
         mark: total,
         updated_at: new Date().toISOString(),
@@ -496,6 +612,10 @@ export default function InternalMarks({
             seminar_mark,
             test_paper_mark,
             attendance_mark,
+            open_ended_assignment_mark,
+            open_ended_seminar_mark,
+            open_ended_test_mark,
+            open_ended_mark,
             total_mark,
             mark,
             created_at,
@@ -520,10 +640,19 @@ export default function InternalMarks({
         subject_id: String(savedRow?.subject_id ?? subject.id),
         course: String(savedRow?.course ?? course),
         semester: Number(savedRow?.semester ?? semester),
-        assignment_mark: Number(savedRow?.assignment_mark ?? values[0]),
-        seminar_mark: Number(savedRow?.seminar_mark ?? values[1]),
-        test_paper_mark: Number(savedRow?.test_paper_mark ?? values[2]),
-        attendance_mark: Number(savedRow?.attendance_mark ?? values[3]),
+        assignment_mark: Number(savedRow?.assignment_mark ?? theoryValues[0]),
+        seminar_mark: Number(savedRow?.seminar_mark ?? theoryValues[1]),
+        test_paper_mark: Number(savedRow?.test_paper_mark ?? theoryValues[2]),
+        attendance_mark: Number(savedRow?.attendance_mark ?? 0),
+        class_performance_mark: Number(savedRow?.class_performance_mark ?? practicalValues[0]),
+        viva_voce_mark: Number(savedRow?.viva_voce_mark ?? practicalValues[1]),
+        report_mark: Number(savedRow?.report_mark ?? practicalValues[2]),
+        open_ended_assignment_mark: Number(savedRow?.open_ended_assignment_mark ?? openEndedValues[0]),
+        open_ended_seminar_mark: Number(savedRow?.open_ended_seminar_mark ?? openEndedValues[1]),
+        open_ended_test_mark: Number(savedRow?.open_ended_test_mark ?? openEndedValues[2]),
+        open_ended_mark: Number(savedRow?.open_ended_mark ?? openEndedTotal),
+        internal_theory_mark: Number(savedRow?.internal_theory_mark ?? theoryTotal),
+        internal_practical_mark: Number(savedRow?.internal_practical_mark ?? practicalTotal),
         total_mark: Number(savedRow?.total_mark ?? total),
         mark: Number(savedRow?.mark ?? total),
         created_at: savedRow?.created_at,
@@ -565,7 +694,7 @@ export default function InternalMarks({
       .replace(/'/g, "&#039;");
   }
 
-  function generateReport() {
+  function generateReport(selectedSubjectId: string) {
     if (!course || !semester) {
       setError("Please select a course and semester before generating the report.");
       return;
@@ -576,59 +705,305 @@ export default function InternalMarks({
       return;
     }
 
-    const rows = students
-      .map((student, studentIndex) => {
-        const studentMarks = marks[student.id] ?? [];
+    const recordedMarks = students.flatMap((student) =>
+      (marks[student.id] ?? []).map((mark) => ({
+        student,
+        mark,
+        subject: getRelatedSubject(mark),
+      }))
+    );
 
-        const identityCells = `
-          <td class="admissionCell">${escapeHtml(student.admissionNo)}</td>
-          <td class="studentNameCell">
-            <strong>${escapeHtml(student.name)}</strong>
-          </td>
-        `;
+    const allReportSubjects = subjects.length
+      ? subjects
+      : Array.from(
+          new Map(
+            recordedMarks
+              .filter((item) => item.subject)
+              .map((item) => [item.subject!.id, item.subject!])
+          ).values()
+        );
 
-        const blankIdentityCells = `
-          <td class="admissionCell blankIdentity" aria-hidden="true"></td>
-          <td class="studentNameCell blankIdentity" aria-hidden="true"></td>
-        `;
+    const selectedReportSubject = allReportSubjects.find(
+      (subject) => subject.id === selectedSubjectId
+    );
 
-        if (!studentMarks.length) {
+    if (!selectedReportSubject) {
+      setError("Please select a subject before generating the report.");
+      return;
+    }
+
+    const getMarkValue = (mark: InternalMark | undefined, key: keyof InternalMark) =>
+      Number(mark?.[key] ?? 0);
+
+    const selectedReportSubjects = [selectedReportSubject];
+    const reportSubjects = allReportSubjects;
+
+    // PAGE 1: selected subject only.
+    // Practical takes precedence over Open Ended for the selected subject.
+    const subjectSections = selectedReportSubjects.map((subject) => {
+      const subjectMarks = students.map((student) =>
+        (marks[student.id] ?? []).find((item) => item.subject_id === subject.id)
+      );
+
+      const hasTheory = subjectMarks.some(
+        (m) =>
+          getMarkValue(m, "internal_theory_mark") > 0 ||
+          getMarkValue(m, "assignment_mark") > 0 ||
+          getMarkValue(m, "seminar_mark") > 0 ||
+          getMarkValue(m, "test_paper_mark") > 0
+      );
+
+      const hasPractical = subjectMarks.some(
+        (m) =>
+          getMarkValue(m, "internal_practical_mark") > 0 ||
+          getMarkValue(m, "class_performance_mark") > 0 ||
+          getMarkValue(m, "viva_voce_mark") > 0 ||
+          getMarkValue(m, "report_mark") > 0
+      );
+
+      const hasOpenEnded = subjectMarks.some(
+        (m) =>
+          getMarkValue(m, "open_ended_mark") > 0 ||
+          getMarkValue(m, "open_ended_assignment_mark") > 0 ||
+          getMarkValue(m, "open_ended_seminar_mark") > 0 ||
+          getMarkValue(m, "open_ended_test_mark") > 0
+      );
+
+      const showPractical = hasPractical;
+      const showOpenEnded = !hasPractical && hasOpenEnded;
+
+      const hasClassPerformance =
+        showPractical &&
+        subjectMarks.some(
+          (m) => getMarkValue(m, "class_performance_mark") > 0
+        );
+      const hasVivaVoce =
+        showPractical &&
+        subjectMarks.some((m) => getMarkValue(m, "viva_voce_mark") > 0);
+      const hasReport =
+        showPractical &&
+        subjectMarks.some((m) => getMarkValue(m, "report_mark") > 0);
+
+      const practicalSpan =
+        Number(hasClassPerformance) +
+        Number(hasVivaVoce) +
+        Number(hasReport) +
+        1;
+
+      const subjectRows = students
+        .map((student, index) => {
+          const m = subjectMarks[index];
+
           return `
-            <tr class="studentStart">
-              ${identityCells}
-              <td colspan="6" class="no-mark">No marks added</td>
+            <tr>
+              <td class="serialNo">${index + 1}</td>
+              <td class="studentNameCell"><strong>${escapeHtml(student.name)}</strong></td>
+              <td class="admissionCell">${escapeHtml(student.admissionNo)}</td>
+
+              ${hasTheory ? `
+                <td class="center">${m ? getMarkValue(m, "assignment_mark") || "—" : "—"}</td>
+                <td class="center">${m ? getMarkValue(m, "seminar_mark") || "—" : "—"}</td>
+                <td class="center">${m ? getMarkValue(m, "test_paper_mark") || "—" : "—"}</td>
+                <td class="theoryTotalCell"><strong>${m && getMarkValue(m, "internal_theory_mark") > 0 ? getMarkValue(m, "internal_theory_mark").toFixed(2) : "—"}</strong></td>
+              ` : ""}
+
+              ${showPractical ? `
+                ${hasClassPerformance ? `<td class="center">${m ? getMarkValue(m, "class_performance_mark") || "—" : "—"}</td>` : ""}
+                ${hasVivaVoce ? `<td class="center">${m ? getMarkValue(m, "viva_voce_mark") || "—" : "—"}</td>` : ""}
+                ${hasReport ? `<td class="center">${m ? getMarkValue(m, "report_mark") || "—" : "—"}</td>` : ""}
+                <td class="practicalTotalCell"><strong>${m && getMarkValue(m, "internal_practical_mark") > 0 ? getMarkValue(m, "internal_practical_mark").toFixed(2) : "—"}</strong></td>
+              ` : ""}
+
+              ${showOpenEnded ? `
+                <td class="center">${m ? getMarkValue(m, "open_ended_assignment_mark") || "—" : "—"}</td>
+                <td class="center">${m ? getMarkValue(m, "open_ended_seminar_mark") || "—" : "—"}</td>
+                <td class="center">${m ? getMarkValue(m, "open_ended_test_mark") || "—" : "—"}</td>
+                <td class="openEndedTotalCell"><strong>${m && getMarkValue(m, "open_ended_mark") > 0 ? getMarkValue(m, "open_ended_mark").toFixed(2) : "—"}</strong></td>
+              ` : ""}
             </tr>
           `;
-        }
+        })
+        .join("");
 
-        return studentMarks
-          .map((mark, markIndex) => {
-            const subject = getRelatedSubject(mark);
+      return `
+        <section class="subjectSection">
+          <div class="subjectTitle">
+            <div>
+              <div class="subjectLabel">INTERNAL SPLIT-UP • SUBJECT WISE</div>
+              <h2>${escapeHtml(subject.subject_name)}</h2>
+            </div>
+            <div class="subjectCode">${escapeHtml(subject.subject_code)}</div>
+          </div>
 
-            return `
-              <tr class="${markIndex === 0 ? "studentStart" : ""}">
-                ${markIndex === 0 ? identityCells : blankIdentityCells}
-                <td class="subjectCell">
-                  <strong>${escapeHtml(subject?.subject_code ?? "—")}</strong>
-                  ${
-                    subject?.subject_name
-                      ? `<span>${escapeHtml(subject.subject_name)}</span>`
-                      : ""
-                  }
-                </td>
-                <td>${Number(mark.assignment_mark).toLocaleString()}</td>
-                <td>${Number(mark.seminar_mark).toLocaleString()}</td>
-                <td>${Number(mark.test_paper_mark).toLocaleString()}</td>
-                <td>${Number(mark.attendance_mark).toLocaleString()}</td>
-                <td class="totalCell"><strong>${Number(mark.total_mark).toLocaleString()}</strong></td>
+          <table class="subjectTable">
+            <thead>
+              <tr>
+                <th rowspan="2">Sl. No.</th>
+                <th rowspan="2">Name of the Student</th>
+                <th rowspan="2">Admission No.</th>
+                ${hasTheory ? `<th colspan="4" class="groupHead">Internal Theory</th>` : ""}
+                ${showPractical ? `<th colspan="${practicalSpan}" class="groupHead">Internal Practical / Practicum</th>` : ""}
+                ${showOpenEnded ? `<th colspan="4" class="groupHead">Internal Open Ended</th>` : ""}
               </tr>
-            `;
+              <tr>
+                ${hasTheory ? `
+                  <th>Assignment<br><span>(2)</span></th>
+                  <th>Seminar<br><span>(3)</span></th>
+                  <th>Test<br><span>(5)</span></th>
+                  <th>Internal Theory<br><span>(Max. 10.00)</span></th>
+                ` : ""}
+                ${showPractical ? `
+                  ${hasClassPerformance ? `<th>Class Performance<br><span>(10)</span></th>` : ""}
+                  ${hasVivaVoce ? `<th>Viva-Voce<br><span>(7)</span></th>` : ""}
+                  ${hasReport ? `<th>Report<br><span>(3)</span></th>` : ""}
+                  <th>Internal Practical / Practicum<br><span>(Max. 20.00)</span></th>
+                ` : ""}
+                ${showOpenEnded ? `
+                  <th>Assignment<br><span>(2)</span></th>
+                  <th>Seminar<br><span>(4)</span></th>
+                  <th>Test<br><span>(4)</span></th>
+                  <th>Internal Open Ended<br><span>(Max. 10.00)</span></th>
+                ` : ""}
+              </tr>
+            </thead>
+            <tbody>${subjectRows}</tbody>
+          </table>
+        </section>
+      `;
+    }).join("");
+
+    // PAGE 2: consolidated marksheet. Every subject is included.
+    // Theory, Practical and Open Ended are independent columns when data exists.
+    const consolidatedSubjectMeta = reportSubjects.map((subject) => {
+      const subjectMarks = students.map((student) =>
+        (marks[student.id] ?? []).find((item) => item.subject_id === subject.id)
+      );
+
+      const hasTheory = subjectMarks.some(
+        (m) =>
+          getMarkValue(m, "internal_theory_mark") > 0 ||
+          getMarkValue(m, "assignment_mark") > 0 ||
+          getMarkValue(m, "seminar_mark") > 0 ||
+          getMarkValue(m, "test_paper_mark") > 0
+      );
+
+      const hasPractical = subjectMarks.some(
+        (m) =>
+          getMarkValue(m, "internal_practical_mark") > 0 ||
+          getMarkValue(m, "class_performance_mark") > 0 ||
+          getMarkValue(m, "viva_voce_mark") > 0 ||
+          getMarkValue(m, "report_mark") > 0
+      );
+
+      const hasOpenEnded = subjectMarks.some(
+        (m) =>
+          getMarkValue(m, "open_ended_mark") > 0 ||
+          getMarkValue(m, "open_ended_assignment_mark") > 0 ||
+          getMarkValue(m, "open_ended_seminar_mark") > 0 ||
+          getMarkValue(m, "open_ended_test_mark") > 0
+      );
+
+      const columns: Array<"theory" | "practical" | "openEnded"> = [];
+
+      if (hasTheory) columns.push("theory");
+      if (hasPractical) columns.push("practical");
+
+      // Open Ended must always be the last assessment column for this subject.
+      if (hasOpenEnded) columns.push("openEnded");
+
+      return { subject, columns };
+    });
+
+    const consolidatedSubjectColumns = consolidatedSubjectMeta
+      .map(
+        ({ subject, columns }) => `
+          <th colspan="${Math.max(columns.length, 1)}" class="consolidatedSubject">
+            ${escapeHtml(subject.subject_name)}<br>
+            <span>(${escapeHtml(subject.subject_code)})</span>
+          </th>
+        `
+      )
+      .join("");
+
+    const consolidatedSubHeaders = consolidatedSubjectMeta
+      .map(({ columns }) =>
+        columns.length
+          ? columns.map((column) => {
+              if (column === "theory") {
+                return `<th class="miniHead">Internal Theory<br><span>Max. 10.00</span></th>`;
+              }
+              if (column === "practical") {
+                return `<th class="miniHead">Internal Practical / Practicum<br><span>Max. 20.00</span></th>`;
+              }
+              return `<th class="miniHead">Internal Open Ended<br><span>Max. 10.00</span></th>`;
+            }).join("")
+          : `<th class="miniHead">Internal Marks<br><span>—</span></th>`
+      )
+      .join("");
+
+    const consolidatedColumnCount = consolidatedSubjectMeta.reduce(
+      (count, item) => count + Math.max(item.columns.length, 1),
+      0
+    );
+
+    const consolidatedSubjectWidth = consolidatedColumnCount
+      ? (73.5 / consolidatedColumnCount)
+      : 73.5;
+
+    const consolidatedColGroup = `
+      <colgroup>
+        <col style="width:3.5%">
+        <col style="width:8%">
+        <col style="width:15%">
+        ${Array.from(
+          { length: consolidatedColumnCount },
+          () => `<col style="width:${consolidatedSubjectWidth}%">`
+        ).join("")}
+      </colgroup>
+    `;
+
+    const consolidatedRows = students
+      .map((student, studentIndex) => {
+        const cells = consolidatedSubjectMeta
+          .map(({ subject, columns }) => {
+            const m = (marks[student.id] ?? []).find(
+              (item) => item.subject_id === subject.id
+            );
+
+            if (!m) {
+              return columns.length
+                ? columns.map(() => `<td class="dash">—</td>`).join("")
+                : `<td class="dash">—</td>`;
+            }
+
+            const theory = getMarkValue(m, "internal_theory_mark");
+            const practical = getMarkValue(m, "internal_practical_mark");
+            const openEndedTotal = getMarkValue(m, "open_ended_mark");
+
+            return columns.map((column) => {
+              if (column === "theory") {
+                return `<td class="consolidatedValue theoryValue">${theory > 0 ? theory.toFixed(2) : "—"}</td>`;
+              }
+              if (column === "practical") {
+                return `<td class="consolidatedValue practicalValue">${practical > 0 ? practical.toFixed(2) : "—"}</td>`;
+              }
+              return `<td class="consolidatedValue openEndedValue">${openEndedTotal > 0 ? openEndedTotal.toFixed(2) : "—"}</td>`;
+            }).join("");
           })
           .join("");
+
+        return `
+          <tr>
+            <td class="serialNo">${studentIndex + 1}</td>
+            <td class="regNo">${escapeHtml(student.registerNo)}</td>
+            <td class="studentNameWide"><strong>${escapeHtml(student.name)}</strong></td>
+            ${cells}
+          </tr>
+        `;
       })
       .join("");
 
-    const reportWindow = window.open("", "_blank", "width=1200,height=850");
+    const reportWindow = window.open("", "_blank", "width=1400,height=900");
 
     if (!reportWindow) {
       setError("Please allow pop-ups in the browser to generate the report.");
@@ -640,216 +1015,483 @@ export default function InternalMarks({
       <html>
         <head>
           <meta charset="utf-8" />
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
           <title>Internal Marks Report - ${escapeHtml(course)} - Semester ${escapeHtml(semester)}</title>
           <style>
             * { box-sizing: border-box; }
-            body {
+
+            @page {
+              size: A4 landscape;
               margin: 0;
-              padding: 32px;
-              color: #172033;
-              background: #ffffff;
-              font-family: Arial, Helvetica, sans-serif;
             }
-            .header {
+
+            @page portraitPage {
+              size: A4 portrait;
+              margin: 7mm;
+            }
+
+            @page landscapePage {
+              size: A4 landscape;
+              margin: 0;
+            }
+
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              background: #fff;
+            }
+
+            body {
+              color: #172033;
+              font-family: "Poppins", Arial, sans-serif;
+              font-size: 7px;
+              font-weight: 500;
+              line-height: 1.15;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+
+            .reportPage {
+              width: 100%;
+              min-height: 0;
+              page-break-after: always;
+              break-after: page;
+              overflow: hidden;
+              position: relative;
+            }
+
+            .portraitPage {
+              page: portraitPage;
+              width: 100%;
+              max-width: 100%;
+              height: 283mm;
+              margin: 0;
+              overflow: visible;
+            }
+
+            .landscapePage {
+              page: landscapePage;
+              width: 297mm;
+              max-width: 297mm;
+              height: 210mm;
+              margin: 0;
+              padding: 5mm;
+              overflow: hidden;
+              box-sizing: border-box;
+            }
+
+            .reportPage:last-child {
+              page-break-after: auto;
+              break-after: auto;
+            }
+
+            .reportHeader {
+              width: 100%;
+              text-align: center;
+              margin: 0 0 5px;
+            }
+
+            .college {
+              margin: 0;
+              font-size: 12px;
+              line-height: 1.25;
+              font-weight: 700;
+              letter-spacing: .025em;
+              text-transform: uppercase;
+            }
+
+            .reportTitle {
+              margin-top: 2px;
+              font-size: 11px;
+              line-height: 1.25;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+
+            .reportMeta {
+              margin-top: 2px;
+              font-size: 7px;
+              line-height: 1.2;
+              font-weight: 700;
+            }
+
+            .rule {
+              height: 1px;
+              margin: 5px 0 6px;
+              background: #26364a;
+            }
+
+            .subjectSection {
+              width: 100%;
+              margin: 0 0 5px;
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+
+            .subjectTitle {
               display: flex;
               justify-content: space-between;
-              gap: 24px;
-              align-items: flex-start;
-              padding-bottom: 18px;
-              border-bottom: 2px solid #172033;
+              align-items: center;
+              width: 100%;
+              border: 1px solid #69788a;
+              border-bottom: 0;
+              padding: 4px 6px;
+              background: #e7edf4;
             }
-            .college {
-              font-size: 11px;
-              font-weight: 800;
-              letter-spacing: 0.08em;
-              text-transform: uppercase;
-              color: #64748b;
+
+            .subjectLabel {
+              font-size: 6px;
+              line-height: 1.1;
+              font-weight: 700;
+              letter-spacing: .06em;
+              color: #53647a;
             }
-            h1 {
-              margin: 6px 0 5px;
-              font-size: 24px;
+
+            .subjectTitle h2 {
+              margin: 1px 0 0;
+              font-size: 8px;
               line-height: 1.2;
+              font-weight: 700;
+              text-transform: uppercase;
             }
-            .meta {
-              color: #475569;
-              font-size: 13px;
+
+            .subjectCode {
+              font-size: 7px;
+              line-height: 1.1;
               font-weight: 700;
             }
-            .date {
-              color: #64748b;
-              font-size: 12px;
-              white-space: nowrap;
-            }
-            .summary {
-              display: flex;
-              gap: 10px;
-              margin: 18px 0;
-            }
-            .pill {
-              padding: 8px 11px;
-              border: 1px solid #cbd5e1;
-              border-radius: 8px;
-              background: #f8fafc;
-              font-size: 11px;
-              font-weight: 700;
-            }
+
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 10.5px;
+              border-spacing: 0;
+              table-layout: fixed;
             }
-            th {
-              padding: 9px 7px;
-              border: 1px solid #334155;
-              background: #e2e8f0;
+
+            th, td {
+              border: 1px solid #78889a;
+            }
+
+            .subjectTable {
+              width: 100%;
+              max-width: 100%;
+              font-size: 5.6px;
+            }
+
+            .subjectTable th {
+              padding: 3px 2px;
+              background: #dbe4ee;
               color: #172033;
-              text-align: left;
-              font-size: 9px;
-              letter-spacing: 0.04em;
+              text-align: center;
+              vertical-align: middle;
+              font-weight: 700;
+              line-height: 1.1;
               text-transform: uppercase;
             }
-            td {
-              padding: 8px 7px;
-              border: 1px solid #cbd5e1;
-              vertical-align: top;
+
+            .subjectTable th.groupHead {
+              padding: 3px 2px;
+              background: #c8d4e2;
+              font-size: 6.5px;
+              font-weight: 700;
             }
-            td span {
-              color: #64748b;
-              font-size: 9px;
+
+            .subjectTable th span {
+              font-size: 5.3px;
+              font-weight: 500;
             }
-            .no-mark {
-              color: #94a3b8;
+
+            .subjectTable td {
+              padding: 2px 1.8px;
+              height: 13px;
+              vertical-align: middle;
+              line-height: 1.05;
+              overflow: hidden;
+            }
+
+            .studentNameCell { width: 19%; }
+            .admissionCell { width: 8%; text-align: center; }
+            .center { text-align: center; }
+
+            .theoryTotalCell {
+              background: #eef5e9 !important;
+              font-weight: 700;
               text-align: center;
-              font-style: italic;
             }
+
+            .practicalTotalCell {
+              background: #edf4fb !important;
+              font-weight: 700;
+              text-align: center;
+            }
+
+            .openEndedTotalCell {
+              background: #f8e3e3 !important;
+              color: #111 !important;
+              font-weight: 700;
+              text-align: center;
+            }
+
+            .openEndedHead,
+            .openEndedValue {
+              background: #f8e3e3 !important;
+              color: #111 !important;
+            }
+
+            /* PAGE 2 — exact reference structure:
+               Sl No | Reg No | Student | Subject groups */
+            .landscapePage .consolidated {
+              display: table;
+              width: 100% !important;
+              min-width: 0 !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              font-size: 4px;
+              table-layout: fixed !important;
+              border-collapse: collapse !important;
+              overflow: hidden !important;
+            }
+
+            .consolidated .serialHead,
+            .consolidated .serialNo {
+              width: 3.5%;
+              text-align: center;
+            }
+
+            .consolidated .regHead,
+            .consolidated .regNo {
+              width: 8%;
+              text-align: center;
+            }
+
+            .consolidated .nameHead,
+            .consolidated .studentNameWide {
+              width: 16%;
+            }
+
+            .landscapePage .consolidated th {
+              padding: 2px 1px;
+              width: auto;
+              text-align: center;
+              vertical-align: middle;
+              background: #dbe4ee;
+              color: #172033;
+              font-size: 5px;
+              line-height: 1.1;
+              font-weight: 700;
+              text-transform: uppercase;
+              word-break: break-word;
+              overflow: hidden;
+              overflow-wrap: anywhere;
+              white-space: normal;
+              max-width: 100%;
+              min-width: 0;
+            }
+
+            .landscapePage .consolidated th.consolidatedSubject {
+              background: #29352b;
+              color: #fff;
+              font-size: 5.2px;
+              line-height: 1.15;
+              font-weight: 700;
+              padding: 3px 2px;
+            }
+
+            .consolidated th span {
+              font-size: 5px;
+              font-weight: 500;
+            }
+
+            .landscapePage .consolidated td {
+              padding: 1.8px 1px;
+              height: 13px;
+              width: auto;
+              min-width: 0;
+              max-width: 100%;
+              overflow: hidden;
+              overflow-wrap: anywhere;
+              word-break: break-all;
+              text-align: center;
+              vertical-align: middle;
+              line-height: 1.05;
+              font-weight: 500;
+            }
+
+            .consolidated .studentNameWide {
+              text-align: left !important;
+              padding-left: 4px;
+              font-weight: 500;
+            }
+
+            .consolidated .studentNameWide strong {
+              font-weight: 700;
+            }
+
+            .consolidatedValue {
+              background: #f8fafc;
+              font-weight: 500;
+            }
+
+            .theoryValue {
+              background: #eef5e9 !important;
+            }
+
+            .practicalValue {
+              background: #edf4fb !important;
+            }
+
+            .openEndedValue {
+              background: #f8e3e3 !important;
+              color: #111 !important;
+            }
+
+            .dash {
+              color: #94a3b8;
+              font-weight: 500;
+            }
+
+            .signatureRow {
+              display: grid;
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+              gap: 38px;
+              margin-top: 20px;
+              padding: 0 10px;
+              width: 100%;
+            }
+
+            .signature {
+              padding-top: 11px;
+              border-top: 1px solid #26364a;
+              text-align: center;
+              font-size: 6.5px;
+              line-height: 1.1;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+
             .footer {
-              margin-top: 22px;
+              position: absolute;
+              right: 0;
+              bottom: 2px;
+              margin: 0;
               color: #64748b;
-              font-size: 9px;
-              text-align: right;
+              font-size: 4.8px;
+              font-weight: 500;
             }
+
             @media print {
-              body { padding: 16px; }
-              .no-print { display: none; }
-              @page {
-                size: A4 landscape;
-                margin: 10mm;
+              html, body {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+
+              .reportPage {
+                width: 100% !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                overflow: hidden !important;
+              }
+
+              .portraitPage {
+                page: portraitPage !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 283mm !important;
+                margin: 0 !important;
+                overflow: visible !important;
+              }
+
+              .landscapePage {
+                page: landscapePage !important;
+                width: 297mm !important;
+                max-width: 297mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                padding: 5mm !important;
+                overflow: hidden !important;
+              }
+
+              .landscapePage .consolidated {
+                display: table !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+              }
+
+              .landscapePage .consolidated col {
+                min-width: 0 !important;
+              }
+
+              .reportPage:last-child {
+                page-break-after: auto !important;
+                break-after: auto !important;
+              }
+
+              .subjectSection {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              table {
+                max-width: 100% !important;
               }
             }
-    
-        /* Navy action theme for Internal Marks Add buttons */
-        .internalMarksPage button.internalMarksAddButton,
-        .internalMarksPage .internalMarksAddButton,
-        .internalMarksPage button[data-action="add-mark"] {
-          background: #0f2747;
-          border: 1px solid #0b1d34;
-          color: #ffffff;
-          box-shadow:
-            0 3px 0 #071525,
-            0 7px 14px rgba(15, 39, 71, 0.16);
-          transition:
-            transform 140ms ease,
-            box-shadow 140ms ease,
-            background 140ms ease;
-        }
-
-        .internalMarksPage button.internalMarksAddButton:hover:not(:disabled),
-        .internalMarksPage .internalMarksAddButton:hover:not(:disabled),
-        .internalMarksPage button[data-action="add-mark"]:hover:not(:disabled) {
-          background: #17365f;
-          transform: translateY(-2px);
-          box-shadow:
-            0 5px 0 #071525,
-            0 10px 18px rgba(15, 39, 71, 0.19);
-        }
-
-        .internalMarksPage button.internalMarksAddButton:active:not(:disabled),
-        .internalMarksPage .internalMarksAddButton:active:not(:disabled),
-        .internalMarksPage button[data-action="add-mark"]:active:not(:disabled) {
-          transform: translateY(1px);
-          box-shadow:
-            0 2px 0 #071525,
-            0 4px 8px rgba(15, 39, 71, 0.12);
-        }
-
-        /* View modal: alternating light-gray / gray subject rows/cards */
-        .internalMarksModal .internalMarksViewList {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .internalMarksModal .internalMarksViewCard {
-          border: 1px solid #cbd5e1;
-          border-radius: 12px;
-          background: #f1f5f9;
-          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.045);
-          overflow: hidden;
-        }
-
-        .internalMarksModal .internalMarksViewCard:nth-child(even) {
-          background: #e5e7eb;
-        }
-
-        .internalMarksModal .internalMarksViewCard:nth-child(odd) {
-          background: #f8fafc;
-        }
-
-        .internalMarksModal .internalMarksViewSubject {
-          border-bottom: 1px solid #cbd5e1;
-        }
-
-        .internalMarksModal .internalMarksViewScores > div {
-          border-right: 1px solid #d1d5db;
-        }
-
-        .internalMarksModal .internalMarksViewScores > div:last-child {
-          border-right: 0;
-        }
-
-      </style>
+          </style>
         </head>
         <body>
-          <div class="header">
-            <div>
-              <div class="college">Royal College of Arts and Science, Thrithala</div>
-              <h1>Internal Marks Report</h1>
-              <div class="meta">${escapeHtml(course)} &nbsp; • &nbsp; Semester ${escapeHtml(semester)}</div>
+          <section class="reportPage portraitPage">
+            <div class="reportHeader">
+              <div class="college">Royal College of Arts and Science Thrithala</div>
+              <div class="reportTitle">Internal Split-Up Subject Wise</div>
+              <div class="reportMeta">${escapeHtml(course)} &nbsp; • &nbsp; Semester ${escapeHtml(semester)}</div>
+              <div class="rule"></div>
             </div>
-            <div class="date">${escapeHtml(new Date().toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }))}</div>
-          </div>
+            ${subjectSections || `
+              <div style="padding:30px;text-align:center;color:#64748b">
+                No syllabus subjects found for this course and semester.
+              </div>
+            `}
+            <div class="footer">Generated from the Royal College Administration System</div>
+          </section>
 
-          <div class="summary">
-            <div class="pill">Students: ${students.length}</div>
-            <div class="pill">Subjects Recorded: ${students.reduce(
-              (sum, student) => sum + (marks[student.id]?.length ?? 0),
-              0
-            )}</div>
-          </div>
+          <section class="reportPage landscapePage">
+            <div class="reportHeader">
+              <div class="college">Royal College of Arts and Science Thrithala</div>
+              <div class="reportTitle">Consolidated Internal Marksheet</div>
+              <div class="reportMeta">${escapeHtml(semester === "1" ? "1st" : semester === "2" ? "2nd" : semester === "3" ? "3rd" : `${escapeHtml(semester)}th`)} Semester • ${escapeHtml(course)}</div>
+              <div class="rule"></div>
+            </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Admission No.</th>
-                <th>Student Name</th>
-                <th>Subject</th>
-                <th>Assignment</th>
-                <th>Seminar</th>
-                <th>Test Paper</th>
-                <th>Attendance</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
+            <table class="consolidated">
+              ${consolidatedColGroup}
+              <thead>
+                <tr>
+                  <th rowspan="2" class="serialHead">Sl. No.</th>
+                  <th rowspan="2" class="regHead">Reg. No.</th>
+                  <th rowspan="2" class="nameHead">Name of the Student</th>
+                  ${consolidatedSubjectColumns}
+                </tr>
+                <tr>
+                  ${consolidatedSubHeaders}
+                </tr>
+              </thead>
+              <tbody>${consolidatedRows}</tbody>
+            </table>
 
-          <div class="footer">
-            Generated from the Royal College Administration System
-          </div>
+            <div class="signatureRow">
+              <div class="signature">Subject Faculty</div>
+              <div class="signature">HOD</div>
+              <div class="signature">Principal</div>
+            </div>
+
+            <div class="footer">Generated from the Royal College Administration System</div>
+          </section>
         </body>
       </html>
     `);
@@ -875,8 +1517,104 @@ export default function InternalMarks({
     ? marks[viewingStudent.id] ?? []
     : [];
 
+  const reportPickerSubjects = subjects.length
+    ? subjects
+    : Array.from(
+        new Map(
+          Object.values(marks)
+            .flat()
+            .map((mark) => {
+              const subject = getRelatedSubject(mark);
+              return subject ? [subject.id, subject] : null;
+            })
+            .filter(Boolean) as Array<[string, Subject]>
+        ).values()
+      );
+
+
   return (
     <div className="imPage">
+      {reportPickerOpen && (
+        <div className="imOverlay" role="dialog" aria-modal="true" aria-labelledby="report-picker-title">
+          <div className="imModal imReportPickerModal">
+            <div className="imModalHead">
+              <div className="imModalTitleWrap">
+                <div className="imModalIcon"><Icon name="file" size={19} /></div>
+                <div>
+                  <div className="imModalEyebrow">PDF REPORT</div>
+                  <h2 id="report-picker-title">Choose Subject</h2>
+                  <p>Page 1 will show the selected subject. Page 2 will contain all subjects.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="imCloseButton"
+                onClick={() => setReportPickerOpen(false)}
+                aria-label="Close"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <div className="imModalBody">
+              <div className="imReportPickerClass">
+                <span>CLASS</span>
+                <strong>{course}</strong>
+                <small>Semester {semester}</small>
+              </div>
+
+              <label className="imField imReportPickerField">
+                <span>SUBJECT FOR PAGE 1</span>
+                <div className="imSelectWrap">
+                  <select
+                    value={reportSubjectId}
+                    onChange={(event) => setReportSubjectId(event.target.value)}
+                  >
+                    <option value="">Select subject</option>
+                    {reportPickerSubjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.subject_code} — {subject.subject_name}
+                      </option>
+                    ))}
+                  </select>
+                  <span>⌄</span>
+                </div>
+              </label>
+
+              <div className="imReportPickerNote">
+                <Icon name="file" size={16} />
+                <div>
+                  <strong>Report layout</strong>
+                  <span>Page 1: selected subject-wise split-up. Page 2: consolidated marksheet with all subjects.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="imModalFoot">
+              <button
+                type="button"
+                className="imCancelButton"
+                onClick={() => setReportPickerOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="imSaveButton"
+                disabled={!reportSubjectId}
+                onClick={() => {
+                  setReportPickerOpen(false);
+                  generateReport(reportSubjectId);
+                }}
+              >
+                <Icon name="file" size={15} />
+                Generate PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="imTopBar">
         <BackToDashboard onBack={onBack} />
         <div className="imTopBarRight">
@@ -963,7 +1701,11 @@ export default function InternalMarks({
           <button
             type="button"
             className="imReportButton"
-            onClick={generateReport}
+            onClick={() => {
+              setReportSubjectId("");
+              setReportPickerOpen(true);
+              setError("");
+            }}
             disabled={!course || !semester || loadingStudents}
           >
             <Icon name="file" size={17} />
@@ -1131,28 +1873,74 @@ export default function InternalMarks({
                 <div className="imAssessmentHead">
                   <div>
                     <h3>Assessment Breakdown</h3>
-                    <p>Enter the four internal assessment components.</p>
+                    <p>Enter the theory and practical assessment components.</p>
                   </div>
                   <div className="imLiveTotal"><span>TOTAL</span><strong>{liveTotal}</strong></div>
                 </div>
 
+                <div className="imScoreGroupTitle">INTERNAL THEORY <span>MAX 10</span></div>
                 <div className="imScoreGrid">
                   <label className="imScoreField">
                     <span>ASSIGNMENT</span>
-                    <div><input type="number" min="0" step="0.01" value={assignment} onChange={(event) => setAssignment(normalizeMark(event.target.value))} placeholder="0" autoFocus disabled={saving} /><small>MARKS</small></div>
+                    <div><input type="number" min="0" max="2" step="0.01" value={assignment} onChange={(event) => setAssignment(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
                   </label>
                   <label className="imScoreField">
                     <span>SEMINAR</span>
-                    <div><input type="number" min="0" step="0.01" value={seminar} onChange={(event) => setSeminar(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                    <div><input type="number" min="0" max="3" step="0.01" value={seminar} onChange={(event) => setSeminar(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
                   </label>
                   <label className="imScoreField">
-                    <span>TEST PAPER</span>
-                    <div><input type="number" min="0" step="0.01" value={testPaper} onChange={(event) => setTestPaper(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                    <span>TEST</span>
+                    <div><input type="number" min="0" max="5" step="0.01" value={testPaper} onChange={(event) => setTestPaper(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                  </label>
+                  <div className="imTheoryTotal">
+                    THEORY TOTAL
+                    <strong>{liveTheoryTotal}</strong>
+                  </div>
+                </div>
+
+                <div className="imScoreGroupTitle">INTERNAL PRACTICAL / PRACTICUM <span>MAX 20</span></div>
+                <div className="imScoreGrid">
+                  <label className="imScoreField">
+                    <span>CLASS PERFORMANCE</span>
+                    <div><input type="number" min="0" max="10" step="0.01" value={classPerformance} onChange={(event) => setClassPerformance(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
                   </label>
                   <label className="imScoreField">
-                    <span>ATTENDANCE</span>
-                    <div><input type="number" min="0" step="0.01" value={attendance} onChange={(event) => setAttendance(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                    <span>VIVA-VOCE</span>
+                    <div><input type="number" min="0" max="7" step="0.01" value={vivaVoce} onChange={(event) => setVivaVoce(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
                   </label>
+                  <label className="imScoreField">
+                    <span>REPORT</span>
+                    <div><input type="number" min="0" max="3" step="0.01" value={report} onChange={(event) => setReport(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                  </label>
+                  <div className="imTheoryTotal imPracticalTotal">
+                    PRACTICAL TOTAL
+                    <strong>{livePracticalTotal}</strong>
+                  </div>
+                </div>
+
+                <div className="imOpenEndedField">
+                  <div className="imScoreGroupTitle">
+                    INTERNAL OPEN ENDED <span>MAX 10</span>
+                  </div>
+
+                  <div className="imOpenEndedGrid">
+                    <label className="imScoreField">
+                      <span>ASSIGNMENT</span>
+                      <div><input type="number" min="0" max="2" step="0.01" value={openEndedAssignment} onChange={(event) => setOpenEndedAssignment(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                    </label>
+                    <label className="imScoreField">
+                      <span>SEMINAR</span>
+                      <div><input type="number" min="0" max="4" step="0.01" value={openEndedSeminar} onChange={(event) => setOpenEndedSeminar(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                    </label>
+                    <label className="imScoreField">
+                      <span>TEST</span>
+                      <div><input type="number" min="0" max="4" step="0.01" value={openEndedTest} onChange={(event) => setOpenEndedTest(normalizeMark(event.target.value))} placeholder="0" disabled={saving} /><small>MARKS</small></div>
+                    </label>
+                    <div className="imTheoryTotal imOpenEndedTotal">
+                      OPEN ENDED TOTAL
+                      <strong>{liveOpenEndedTotal}</strong>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1208,7 +1996,13 @@ export default function InternalMarks({
                         <div><span>Assignment</span><strong>{mark.assignment_mark}</strong></div>
                         <div><span>Seminar</span><strong>{mark.seminar_mark}</strong></div>
                         <div><span>Test Paper</span><strong>{mark.test_paper_mark}</strong></div>
-                        <div><span>Attendance</span><strong>{mark.attendance_mark}</strong></div>
+                        <div><span>Class Performance</span><strong>{mark.class_performance_mark}</strong></div>
+                        <div><span>Viva-Voce</span><strong>{mark.viva_voce_mark}</strong></div>
+                        <div><span>Report</span><strong>{mark.report_mark}</strong></div>
+                        <div><span>Open Ended Assignment</span><strong>{mark.open_ended_assignment_mark || "—"}</strong></div>
+                        <div><span>Open Ended Seminar</span><strong>{mark.open_ended_seminar_mark || "—"}</strong></div>
+                        <div><span>Open Ended Test</span><strong>{mark.open_ended_test_mark || "—"}</strong></div>
+                        <div><span>Open Ended Total</span><strong>{mark.open_ended_mark || "—"}</strong></div>
                       </div>
                     </article>
                   );
@@ -1346,13 +2140,57 @@ export default function InternalMarks({
         .imLiveTotal { min-width:78px; padding:7px 10px; border:1px solid #cfe0c8; border-radius:11px; background:#edf5e9; text-align:right; }
         .imLiveTotal span { display:block; color:#779068; font-size:6px; font-weight:800; letter-spacing:.1em; }
         .imLiveTotal strong { display:block; margin-top:2px; color:#48673a; font-size:17px; line-height:1; font-weight:800; }
-        .imScoreGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+        .imScoreGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+        .imScoreGroupTitle { display:flex; align-items:center; justify-content:space-between; margin:4px 0 8px; color:#60705f; font-size:8px; font-weight:800; letter-spacing:.08em; }
+        .imScoreGroupTitle span { color:#93a18f; font-size:7px; }
+        .imRedTotal {
+          background: #fbe8e8 !important;
+          border-color: #e6b7b7 !important;
+          color: #a33f3f !important;
+        }
+        .imRedTotal strong {
+          color: #8f2f2f !important;
+        }
+        .imOpenEndedTotal {
+          background: #f6dada !important;
+          border-color: #dca8a8 !important;
+          color: #111 !important;
+        }
+        .imOpenEndedTotal strong {
+          color: #111 !important;
+        }
+        .imTheoryTotal { min-height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid #cfe0c8; border-radius:10px; background:#edf5e9; color:#779068; font-size:7px; font-weight:800; letter-spacing:.05em; text-align:center; }
+        .imTheoryTotal strong { margin-top:3px; color:#48673a; font-size:16px; line-height:1; }
+        .imPracticalTotal { border-color:#cfdae7; background:#edf3f8; color:#667f97; }
+        .imPracticalTotal strong { color:#49657f; }
         .imScoreField { display:flex; flex-direction:column; gap:6px; }
         .imScoreField > span { color:#667268; font-size:8px; font-weight:800; letter-spacing:.07em; }
         .imScoreField > div { position:relative; }
         .imScoreField input { width:100%; height:46px; padding:0 42px 0 12px; border:1px solid #d8e1d5; border-radius:10px; outline:0; background:#fff; color:#263229; font-size:14px; font-weight:800; }
         .imScoreField input:focus { border-color:#84b067; box-shadow:0 0 0 3px rgba(132,176,103,.12); }
         .imScoreField small { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:#a0aaa2; font-size:6px; font-weight:800; letter-spacing:.06em; pointer-events:none; }
+        .imOpenEndedGrid {
+          display: grid !important;
+          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          gap: 10px !important;
+          width: 100% !important;
+          align-items: end;
+        }
+        .imOpenEndedGrid .imScoreField {
+          display: block !important;
+          width: 100% !important;
+          min-width: 0 !important;
+        }
+        .imOpenEndedGrid .imScoreField > div {
+          width: 100% !important;
+        }
+        .imOpenEndedGrid .imScoreField input {
+          width: 100% !important;
+          box-sizing: border-box;
+        }
+        .imOpenEndedField { width:100%; margin-top:14px; padding-top:14px; border-top:1px solid #e2e9df; }
+        .imOpenEndedInput, .imOpenEndedInput > div { width:100%; }
+        .imOpenEndedInput input { width:100%; }
         .imModalFoot { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:14px 22px 18px; border-top:1px solid #e6ebe4; background:#fafcf9; }
         .imCancelButton, .imSaveButton { min-height:39px; padding:0 15px; border-radius:10px; font-size:9px; font-weight:800; cursor:pointer; }
         .imCancelButton { border:1px solid #dce3da; background:#fff; color:#69756c; }
@@ -1374,11 +2212,64 @@ export default function InternalMarks({
         .imMarkTotal { min-width:65px; padding-left:10px; border-left:1px solid #e2e8df; text-align:right; }
         .imMarkTotal span { display:block; color:#91a08e; font-size:6px; font-weight:800; letter-spacing:.1em; }
         .imMarkTotal strong { display:block; margin-top:2px; color:#48673a; font-size:17px; font-weight:800; }
-        .imMarkScores { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:11px; padding-top:10px; border-top:1px solid #edf1eb; }
+        .imMarkScores { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; margin-top:11px; padding-top:10px; border-top:1px solid #edf1eb; }
         .imMarkScores > div { padding:8px 9px; border-radius:9px; background:#f5f8f4; }
         .imMarkScores span { display:block; color:#8a958c; font-size:7px; font-weight:700; }
         .imMarkScores strong { display:block; margin-top:3px; color:#445048; font-size:12px; font-weight:800; }
         .imNeutralButton { min-width:80px; }
+
+        .imReportPickerModal { width:min(620px,100%); }
+        .imReportPickerClass {
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-bottom:18px;
+          padding:12px 13px;
+          border:1px solid #dfe7dc;
+          border-radius:13px;
+          background:#f7faf5;
+        }
+        .imReportPickerClass span {
+          color:#7b897d;
+          font-size:7px;
+          font-weight:800;
+          letter-spacing:.1em;
+        }
+        .imReportPickerClass strong {
+          color:#334137;
+          font-size:11px;
+          font-weight:800;
+        }
+        .imReportPickerClass small {
+          margin-left:auto;
+          color:#718073;
+          font-size:9px;
+          font-weight:700;
+        }
+        .imReportPickerField { margin-bottom:16px; }
+        .imReportPickerNote {
+          display:flex;
+          align-items:flex-start;
+          gap:10px;
+          padding:11px 12px;
+          border:1px solid #dbe7d6;
+          border-radius:12px;
+          background:#f3f8f0;
+          color:#628052;
+        }
+        .imReportPickerNote strong {
+          display:block;
+          color:#48633d;
+          font-size:9px;
+          font-weight:800;
+        }
+        .imReportPickerNote span {
+          display:block;
+          margin-top:3px;
+          color:#7c8b7b;
+          font-size:8px;
+          line-height:1.5;
+        }
 
         @media (max-width:1050px) {
           .imSelectorCard { grid-template-columns:1fr; gap:15px; }

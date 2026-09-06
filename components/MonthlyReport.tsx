@@ -572,84 +572,88 @@ export default function MonthlyReport({
       <html>
         <head>
           <meta charset="utf-8" />
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
           <title>Monthly Report - ${escapeHtml(selectedFaculty.name)}</title>
           <style>
-            @page { size: A4 landscape; margin: 7mm; }
-            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+            @page { size: A4 portrait; margin: 8mm; }
             * { box-sizing: border-box; }
             body {
               margin: 0;
               background: #fff;
-              color: #121212;
+              color: #1f2933;
               font-family: "Poppins", Arial, sans-serif;
-              font-size: 10px;
+              font-size: 9px;
             }
             .page {
               width: 100%;
-              border: 1px solid #121212;
-              padding: 10px;
+              border: 1px solid #012418;
+              padding: 12px;
             }
-            .header { text-align: center; margin-bottom: 8px; }
-            .header h1 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: .15px; }
-            .header h2 { margin: 2px 0 0; font-size: 15px; font-weight: 800; }
+            .header { padding-bottom: 9px; border-bottom: 2px solid #012418; text-align: center; margin-bottom: 10px; }
+            .header h1 { margin: 0; color: #000; font-size: 15px; font-weight: 900; line-height: 1.3; letter-spacing: .08px; }
+            .header h2 { margin: 3px 0 0; color: #012418; font-size: 13px; font-weight: 800; line-height: 1.3; }
             .meta {
               display: grid;
               grid-template-columns: 1fr 1fr;
-              margin: 16px 5px 8px;
-              font-size: 11px;
-              line-height: 1.55;
-              font-weight: 700;
+              margin: 13px 3px 9px;
+              font-size: 9px;
+              line-height: 1.6;
+              font-weight: 600;
             }
-            .meta .right { text-align: right; padding-right: 28px; }
+            .meta .right { color: #012418; text-align: right; padding-right: 8px; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-            th, td { border: 1px solid #222; vertical-align: top; }
+            th, td { border: 1px solid #aebdb5; vertical-align: top; }
             th {
-              height: 49px;
-              padding: 6px 5px;
+              height: 46px;
+              padding: 5px 3px;
               text-align: center;
               vertical-align: middle;
-              font-size: 10px;
+              font-size: 8px;
               line-height: 1.15;
-              font-weight: 800;
-              background: #121212;
+              font-weight: 700;
+              background: #012418;
               color: #fff;
             }
-            td { padding: 7px 6px; font-size: 10px; line-height: 1.35; }
-            th:nth-child(1) { width: 5%; }
-            th:nth-child(2) { width: 11%; }
-            th:nth-child(3) { width: 18%; }
+            td { padding: 6px 4px; font-size: 8px; line-height: 1.35; }
+            th:nth-child(1) { width: 6%; }
+            th:nth-child(2) { width: 16%; }
+            th:nth-child(3) { width: 19%; }
             th:nth-child(4) { width: 12%; }
-            th:nth-child(5) { width: 38%; }
+            th:nth-child(5) { width: 31%; }
             th:nth-child(6) { width: 16%; }
+            .unitTakenHeading { font-size: 9px; line-height: 1.2; }
             .sl { text-align: center; }
-            .classCell { text-align: center; font-size: 10px; line-height: 1.45; }
+            .classCell { text-align: center; font-size: 8px; line-height: 1.4; }
             .classCell strong { display: block; }
-            .subjectCell { text-align: center; font-size: 10px; line-height: 1.45; }
+            .subjectCell { text-align: center; font-size: 8px; line-height: 1.4; }
             .subjectCell strong { display: block; }
-            .totalCell { text-align: center; font-weight: 700; }
-            .chapterCell { font-size: 10px; }
-            .chapterLine { margin: 0 0 5px; }
+            .totalCell { color: #012418; text-align: center; font-weight: 700; }
+            .chapterCell { font-size: 8px; }
+            .chapterLine { margin: 0 0 4px; }
             .chapterLine:last-child { margin-bottom: 0; }
-            .coveredCell { text-align: center; font-weight: 700; line-height: 1.4; }
-            .coveredCell span { font-size: 8px; }
+            .coveredCell { color: #012418; text-align: center; font-weight: 700; line-height: 1.4; }
+            .coveredCell span { font-size: 7px; }
             .signatures {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
-              gap: 40px;
-              margin: 43px 20px 0;
+              gap: 18px;
+              margin: 38px 8px 0;
             }
-            .signature { text-align: center; min-height: 70px; }
-            .signatureSpace { height: 43px; border-bottom: 0; }
+            .signature { text-align: center; min-height: 62px; }
+            .signatureSpace { height: 37px; border-bottom: 0; }
             .signatureLabel {
               display: inline-block;
-              min-width: 145px;
+              min-width: 100px;
               padding-top: 5px;
-              border-top: 1px solid transparent;
-              font-size: 10px;
-              font-weight: 800;
+              border-top: 1px solid #012418;
+              color: #012418;
+              font-size: 8px;
+              font-weight: 700;
               text-transform: uppercase;
             }
-            .empty { text-align: center; padding: 25px; }
+            .empty { text-align: center; padding: 20px; color: #697a72; }
             @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           </style>
         </head>
@@ -675,7 +679,7 @@ export default function MonthlyReport({
                   <th>CLASS</th>
                   <th>SUBJECTS</th>
                   <th>TOTAL<br/>UNITS</th>
-                  <th>UNIT TAKEN BY THIS MONTH</th>
+                  <th class="unitTakenHeading">UNIT TAKEN BY THIS MONTH</th>
                   <th>TOTAL<br/>UNITS<br/>COVERED</th>
                 </tr>
               </thead>
