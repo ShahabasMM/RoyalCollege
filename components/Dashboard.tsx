@@ -77,18 +77,22 @@ export default function Dashboard({
   user,
   moduleSearch = "",
   onModuleSearch,
+  activeTab,
+  onActiveTabChange,
 }: {
   onModule: (id: string) => void;
   user: AppUser;
   moduleSearch?: string;
   onModuleSearch?: (value: string) => void;
+  activeTab: ModuleCategory;
+  onActiveTabChange: (tab: ModuleCategory) => void;
 }) {
   const [error, setError] = useState("");
   const [totalStudents, setTotalStudents] = useState(0);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [totalBooks, setTotalBooks] = useState(0);
   const [loadingBooks, setLoadingBooks] = useState(true);
-  const [activeTab, setActiveTab] = useState<ModuleCategory>(moduleTabs[0].id);
+  // activeTab is controlled by AdminShell so it survives module navigation.
 
   useEffect(() => {
     async function loadTotalStudents() {
@@ -167,8 +171,8 @@ export default function Dashboard({
     if (!normalizedSearch || !searchMatches.length) return;
 
     const matchingCategory = searchMatches[0].category;
-    if (matchingCategory !== activeTab) setActiveTab(matchingCategory);
-  }, [normalizedSearch, searchMatches, activeTab]);
+    if (matchingCategory !== activeTab) onActiveTabChange(matchingCategory);
+  }, [normalizedSearch, searchMatches, activeTab, onActiveTabChange]);
 
   return (
     <>
@@ -191,27 +195,27 @@ export default function Dashboard({
         }
 
         .dashboardRoot {
-          --maroon: #7A2035;
-          --maroon-deep: #4A1420;
+          --maroon: #402304;
+          --maroon-deep: #231702;
           --maroon-line: #9c3f52;
           --parchment: #F2ECDC;
           --parchment-dim: #E9E1CC;
           --paper: #FBF9F3;
           --ink: #2A211D;
           --ink-soft: #6b5f57;
-          --brass: #B08A3E;
+          --brass: #6B4B12;
           --brass-light: #d9c48d;
           --rule: #d9cfb8;
-          --c-application: #8C2A3A;
-          --c-application-soft: #f7e6e6;
-          --c-academic: #23395F;
-          --c-academic-soft: #e5eaf2;
-          --c-reports: #5A2A63;
-          --c-reports-soft: #efe4f0;
-          --c-masters: #5A3A21;
-          --c-masters-soft: #f0e6d9;
-          --c-library: #205C3F;
-          --c-library-soft: #e2ede6;
+          --c-application: #651525;
+          --c-application-soft: #701A2B;
+          --c-academic: #172D50;
+          --c-academic-soft: #1A3156;
+          --c-reports: #43194C;
+          --c-reports-soft: #4A1D52;
+          --c-masters: #3D2616;
+          --c-masters-soft: #472C18;
+          --c-library: #123F2B;
+          --c-library-soft: #164632;
           width: 100%;
           min-width: 0;
           min-height: 100vh;
@@ -223,7 +227,7 @@ export default function Dashboard({
           color: var(--ink);
         }
 
-        .heroWrap { padding: 34px 40px 0; }
+        .heroWrap { padding: 0; }
 
         .hero {
           position: relative;
@@ -303,7 +307,7 @@ export default function Dashboard({
           position: relative;
           z-index: 2;
           margin-top: -22px;
-          padding: 0 40px;
+          padding: 0;
         }
 
         .moduleSearch {
@@ -315,7 +319,7 @@ export default function Dashboard({
           border: 1px solid var(--rule);
           border-radius: 11px;
           background: var(--paper);
-          box-shadow: 0 10px 24px -14px rgba(74,20,32,0.35);
+          box-shadow: 0 10px 24px -14px rgba(136, 64, 80, 0.35);
         }
 
         .moduleSearchIcon {
@@ -335,7 +339,7 @@ export default function Dashboard({
           font-size: 14px;
         }
 
-        .moduleSearch input::placeholder { color: #9a8f83; }
+        .moduleSearch input::placeholder { color: #e7e1db; }
 
         .moduleSearchButton {
           display: flex;
@@ -355,30 +359,60 @@ export default function Dashboard({
         .moduleSearchButton:hover { background: #1c1714; }
 
         .tabs {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 28px 40px 16px;
+          display: inline-flex;
+          flex-wrap: nowrap;
+          gap: 0;
+          padding: 0;
+          margin: 28px 0 0;
+          width: max-content;
+          max-width: 100%;
+          position: relative;
+          z-index: 3;
+          border: 1px solid var(--rule);
+          border-radius: 10px 10px 0 0;
+          background: var(--paper);
+          overflow: visible;
         }
 
         .tab {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 11px 18px;
-          border: none;
-          border-radius: 9px;
+          gap: 9px;
+          min-height: 48px;
+          padding: 12px 20px;
+          border: 1px solid var(--ink);
+          border-right: none;
+          border-radius: 0;
           color: var(--paper);
-          box-shadow: 0 3px 0 rgba(0,0,0,0.22);
-          font-size: 13.5px;
+          box-shadow: 0 2px 0 rgba(0,0,0,0.55);
+          font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          transition: box-shadow .12s ease, transform .12s ease, filter .12s ease;
+          transition: transform .14s ease, filter .14s ease, box-shadow .14s ease;
+          margin-left: 0;
+        }
+
+        .tab:first-child {
+          border-top-left-radius: 10px;
+          border-bottom-left-radius: 10px;
+        }
+
+        .tab:last-child {
+          border-right: 1px solid var(--ink);
+          border-top-right-radius: 10px;
+          border-bottom-right-radius: 10px;
         }
 
         .tabIcon { display: grid; place-items: center; }
         .tab:hover { filter: brightness(1.08); }
-        .tabActive { box-shadow: inset 0 2px 5px rgba(0,0,0,0.4); transform: translateY(2px); filter: brightness(0.86); }
+
+        .tabActive {
+          box-shadow: inset 0 3px 6px rgba(0,0,0,0.22), 0 2px 0 rgba(0,0,0,0.55);
+          transform: translateY(2px);
+          filter: brightness(0.82);
+          z-index: 2;
+        }
+
         .tabActive:hover { filter: brightness(0.86); }
         .tabApplication { background: var(--c-application); }
         .tabAcademic { background: var(--c-academic); }
@@ -387,9 +421,10 @@ export default function Dashboard({
         .tabLibrary { background: var(--c-library); }
 
         .directory {
-          margin: 0 40px 60px;
+          margin: 0 0 60px;
           padding: 30px 38px 40px;
           border: 1px solid var(--rule);
+          border-top: none;
           border-radius: 0 0 14px 14px;
           background: var(--paper);
         }
@@ -410,105 +445,131 @@ export default function Dashboard({
         .moduleGrid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 18px;
+          gap: 20px;
+          align-items: stretch;
         }
 
-        .moduleButtonWrap { min-width: 0; }
+        .moduleButtonWrap {
+          min-width: 0;
+        }
 
+        /* Clean modern module cards: soft surface, strong accent, subtle depth. */
+        /* Clean module cards — matching the reference: soft surface, thin border,
+           strong left accent, simple icon, and no heavy/3D decoration. */
         .moduleButtonWrap :global(.moduleCard) {
           position: relative;
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          justify-content: flex-start;
           width: 100%;
-          min-height: 180px;
-          padding: 22px 22px 24px;
-          border: 1px solid var(--rule);
-          border-left-width: 4px;
-          border-left-color: var(--module-accent, var(--c-application));
-          border-radius: 8px;
-          background: var(--module-soft, var(--paper));
+          min-height: 190px;
+          padding: 22px 28px;
+          overflow: hidden;
+          border: 1px solid #d8cfbd;
+          border-left: 5px solid var(--module-color);
+          border-radius: 10px;
+          background: var(--module-soft);
           color: var(--ink);
           text-align: left;
           cursor: pointer;
           box-shadow: none;
-          transition: transform .15s ease, box-shadow .15s ease;
+          transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+        }
+
+        .moduleButtonWrap :global(.moduleCard)::before,
+        .moduleButtonWrap :global(.moduleCard)::after {
+          display: none;
         }
 
         .moduleButtonWrap :global(.moduleCard:hover) {
-          transform: translateY(-3px);
-          background: var(--module-soft, var(--paper));
-          box-shadow: 0 14px 26px -18px rgba(42,33,29,0.35);
+          transform: translateY(-2px);
+          border-color: color-mix(in srgb, var(--module-color) 35%, #d8cfbd);
+          border-left-color: var(--module-color);
+          box-shadow: 0 8px 20px rgba(42,33,29,0.08);
         }
 
-        .moduleButtonWrap :global(.moduleCard:active) { transform: translateY(0); }
-        .moduleButtonWrap :global(.moduleCard:focus-visible) { outline: 2px solid var(--module-accent); outline-offset: 3px; }
+        .moduleButtonWrap :global(.moduleCard:active) {
+          transform: translateY(0);
+          box-shadow: none;
+        }
 
-        .moduleButtonWrap :global(.moduleCard::before) { display: none; }
+        .moduleButtonWrap :global(.moduleCard:focus-visible) {
+          outline: 2px solid var(--module-color);
+          outline-offset: 3px;
+        }
 
         .moduleButtonWrap :global(.moduleCardIcon) {
           position: relative;
+          z-index: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 38px;
-          height: 38px;
-          margin-bottom: 14px;
-          border: none;
-          border-radius: 8px;
-          background: var(--paper);
-          color: var(--module-accent);
+          width: 48px;
+          height: 48px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(255,255,255,0.7);
+          border-radius: 12px;
+          background: rgba(255,255,255,0.82);
+          color: var(--module-color);
           box-shadow: none;
           flex: 0 0 auto;
         }
 
-        .moduleButtonWrap :global(.moduleCardIcon svg) { width: 18px; height: 18px; }
+        .moduleButtonWrap :global(.moduleCardIcon svg) {
+          width: 22px;
+          height: 22px;
+        }
 
         .moduleButtonWrap :global(.moduleCardContent) {
           position: relative;
+          z-index: 1;
           width: 100%;
           min-width: 0;
-          flex: none;
+          padding-right: 0;
+          flex: 1;
         }
 
         .moduleButtonWrap :global(.moduleCardContent h3) {
-          margin: 0 0 6px;
+          margin: 0 0 7px;
           color: var(--ink);
-          font-size: 16.5px;
-          line-height: 1.3;
-          font-weight: 600;
-          letter-spacing: 0;
+          font-size: 19px;
+          line-height: 1.2;
+          font-weight: 700;
+          letter-spacing: -0.2px;
         }
 
         .moduleButtonWrap :global(.moduleCardContent p) {
           display: block;
           margin: 0;
-          max-width: 100%;
+          max-width: 94%;
           overflow: visible;
           color: var(--ink-soft);
-          font-size: 13px;
+          font-size: 14px;
           line-height: 1.5;
           -webkit-line-clamp: unset;
         }
 
-        .moduleButtonWrap :global(.moduleCardArrow) { display: none !important; }
+        /* The reference design has no floating arrow button. */
+        .moduleButtonWrap :global(.moduleCardArrow) {
+          display: none !important;
+        }
 
-        .moduleButtonWrap :global(.moduleCard--attendance) { --module-accent: #2563eb; --module-soft: #e5eaf2; }
-        .moduleButtonWrap :global(.moduleCard--reports) { --module-accent: #5A2A63; --module-soft: #efe4f0; }
-        .moduleButtonWrap :global(.moduleCard--students) { --module-accent: #205C3F; --module-soft: #e2ede6; }
-        .moduleButtonWrap :global(.moduleCard--admission) { --module-accent: #8C2A3A; --module-soft: #f7e6e6; }
-        .moduleButtonWrap :global(.moduleCard--fee-management) { --module-accent: #5A3A21; --module-soft: #f0e6d9; }
-        .moduleButtonWrap :global(.moduleCard--announcements) { --module-accent: #B08A3E; --module-soft: #f0e6d9; }
-        .moduleButtonWrap :global(.moduleCard--timetable) { --module-accent: #23395F; --module-soft: #e5eaf2; }
-        .moduleButtonWrap :global(.moduleCard--syllabus) { --module-accent: #205C3F; --module-soft: #e2ede6; }
-        .moduleButtonWrap :global(.moduleCard--doubts) { --module-accent: #8C2A3A; --module-soft: #f7e6e6; }
-        .moduleButtonWrap :global(.moduleCard--library) { --module-accent: #205C3F; --module-soft: #e2ede6; }
-        .moduleButtonWrap :global(.moduleCard--online-class) { --module-accent: #23395F; --module-soft: #e5eaf2; }
-        .moduleButtonWrap :global(.moduleCard--leave) { --module-accent: #205C3F; --module-soft: #e2ede6; }
-        .moduleButtonWrap :global(.moduleCard--staff) { --module-accent: #5A2A63; --module-soft: #efe4f0; }
-        .moduleButtonWrap :global(.moduleCard--internal-marks) { --module-accent: #23395F; --module-soft: #e5eaf2; }
-        .moduleButtonWrap :global(.moduleCard--monthly-report) { --module-accent: #5A2A63; --module-soft: #efe4f0; }
+        /* Module-specific accent palette. */
+        .moduleButtonWrap :global(.moduleCard--attendance) { --module-color: #8E2A3D; --module-soft: #F4E3E5; }
+        .moduleButtonWrap :global(.moduleCard--reports) { --module-color: #6A2C70; --module-soft: #EFE3F0; }
+        .moduleButtonWrap :global(.moduleCard--students) { --module-color: #1E6548; --module-soft: #E2EDE7; }
+        .moduleButtonWrap :global(.moduleCard--admission) { --module-color: #9A2D3F; --module-soft: #F4E3E5; }
+        .moduleButtonWrap :global(.moduleCard--fee-management) { --module-color: #68472C; --module-soft: #EFE7DA; }
+        .moduleButtonWrap :global(.moduleCard--announcements) { --module-color: #8A5A12; --module-soft: #F3E8CF; }
+        .moduleButtonWrap :global(.moduleCard--timetable) { --module-color: #244B73; --module-soft: #E5EBF2; }
+        .moduleButtonWrap :global(.moduleCard--syllabus) { --module-color: #247052; --module-soft: #E3EFE9; }
+        .moduleButtonWrap :global(.moduleCard--doubts) { --module-color: #74305E; --module-soft: #F0E2EC; }
+        .moduleButtonWrap :global(.moduleCard--library) { --module-color: #246044; --module-soft: #E2EDE7; }
+        .moduleButtonWrap :global(.moduleCard--online-class) { --module-color: #28688A; --module-soft: #E2EDF2; }
+        .moduleButtonWrap :global(.moduleCard--leave) { --module-color: #246044; --module-soft: #E2EDE7; }
+        .moduleButtonWrap :global(.moduleCard--staff) { --module-color: #69462C; --module-soft: #EFE6DC; }
+        .moduleButtonWrap :global(.moduleCard--internal-marks) { --module-color: #4F438C; --module-soft: #E9E6F2; }
+        .moduleButtonWrap :global(.moduleCard--monthly-report) { --module-color: #71304B; --module-soft: #F0E2E7; }
 
         .errorBox {
           margin: 18px 40px 0;
@@ -538,8 +599,8 @@ export default function Dashboard({
         }
 
         @media (max-width: 880px) {
-          .heroWrap, .moduleSearchWrap, .tabs { padding-left: 20px; padding-right: 20px; }
-          .directory { margin-left: 20px; margin-right: 20px; }
+          .heroWrap, .moduleSearchWrap, .tabs { padding-left: 0; padding-right: 0; }
+          .directory { margin-left: 0; margin-right: 0; }
           .heroStats { flex-direction: column; gap: 14px; }
           .heroStat + .heroStat { border-left: none; border-top: 1px solid rgba(242,236,220,0.22); padding-top: 14px; }
           .heroTop { flex-wrap: wrap; }
@@ -549,15 +610,16 @@ export default function Dashboard({
           .moduleGrid { grid-template-columns: 1fr; }
           .hero { padding: 28px 22px 30px; }
           .directory { padding: 24px 20px 30px; }
-          .tabs { gap: 6px; }
-          .tab { flex: 1 1 calc(50% - 6px); justify-content: center; padding: 10px 12px; }
+          .tabs { gap: 0; }
+          .tabs { flex-wrap: wrap; max-width: 100%; }
+          .tab { flex: 1 1 auto; justify-content: center; padding: 10px 12px; }
         }
 
         @media (max-width: 420px) {
-          .heroWrap { padding-top: 20px; }
+          .heroWrap { padding-top: 0; }
           .moduleSearchWrap { margin-top: -14px; }
           .tab { flex-basis: 100%; }
-          .moduleButtonWrap :global(.moduleCard) { min-height: 160px; }
+          .moduleButtonWrap :global(.moduleCard) { min-height: 170px; padding: 22px 20px 22px; }
         }
       `}</style>
 
@@ -615,7 +677,7 @@ export default function Dashboard({
                 role="tab"
                 aria-selected={activeTab === tab.id}
                 className={`tab ${toneClass}${activeTab === tab.id ? " tabActive" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => onActiveTabChange(tab.id)}
               >
                 <span className="tabIcon"><Icon name={tab.icon} size={15} /></span>
                 <span>{tab.label}</span>

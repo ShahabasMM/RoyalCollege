@@ -22,11 +22,13 @@ import Result from "./Result";
 import Icon from "./Icon";
 
 import { modules } from "@/lib/modules";
+import { ModuleCategory } from "@/types";
 import { AppUser, hasPermission, Permission } from "@/lib/permissions";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminShell({ user }: { user: AppUser }) {
   const [active, setActive] = useState("dashboard");
+  const [dashboardTab, setDashboardTab] = useState<ModuleCategory>("admission-enrollment");
   const [moduleSearch, setModuleSearch] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -108,6 +110,8 @@ export default function AdminShell({ user }: { user: AppUser }) {
             user={user}
             moduleSearch={moduleSearch}
             onModuleSearch={setModuleSearch}
+            activeTab={dashboardTab}
+            onActiveTabChange={setDashboardTab}
           />
         );
 
@@ -232,7 +236,7 @@ export default function AdminShell({ user }: { user: AppUser }) {
           top: 50%;
           display: grid;
           place-items: center;
-          color: #9a8f83;
+          color: #131313;
           transform: translateY(-50%);
           pointer-events: none;
         }
@@ -242,7 +246,7 @@ export default function AdminShell({ user }: { user: AppUser }) {
           width: 100%;
           height: 44px;
           padding: 0 14px 0 40px;
-          border: 1px solid #9c3f52;
+          border: 1px solid #0a0a0a;
           border-radius: 8px;
           outline: none;
           background: #F2ECDC;
@@ -254,7 +258,7 @@ export default function AdminShell({ user }: { user: AppUser }) {
         }
 
         .adminSearch input::placeholder {
-          color: #9a8f83;
+          color: #3a3836;
         }
 
         .adminSearch input:focus {
@@ -359,8 +363,9 @@ export default function AdminShell({ user }: { user: AppUser }) {
         .mainContent {
           width: 100%;
           margin: 0;
-          padding: 0;
+          padding: 30px;
           background: #F2ECDC;
+          box-sizing: border-box;
         }
 
         @media (max-width: 900px) {
