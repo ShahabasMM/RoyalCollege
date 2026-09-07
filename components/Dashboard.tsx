@@ -75,9 +75,13 @@ function getModulePermission(moduleId: string): Permission | null {
 export default function Dashboard({
   onModule,
   user,
+  moduleSearch = "",
+  onModuleSearch,
 }: {
   onModule: (id: string) => void;
   user: AppUser;
+  moduleSearch?: string;
+  onModuleSearch?: (value: string) => void;
 }) {
   const [error, setError] = useState("");
   const [totalStudents, setTotalStudents] = useState(0);
@@ -85,7 +89,6 @@ export default function Dashboard({
   const [totalBooks, setTotalBooks] = useState(0);
   const [loadingBooks, setLoadingBooks] = useState(true);
   const [activeTab, setActiveTab] = useState<ModuleCategory>(moduleTabs[0].id);
-  const [moduleSearch, setModuleSearch] = useState("");
 
   useEffect(() => {
     async function loadTotalStudents() {
@@ -153,8 +156,8 @@ export default function Dashboard({
   const normalizedSearch = moduleSearch.trim().toLowerCase();
   const searchMatches = normalizedSearch
     ? visibleModules.filter((module) =>
-        `${module.title} ${module.description}`.toLowerCase().includes(normalizedSearch),
-      )
+      `${module.title} ${module.description}`.toLowerCase().includes(normalizedSearch),
+    )
     : [];
   const selectedModules = normalizedSearch
     ? searchMatches
@@ -170,7 +173,17 @@ export default function Dashboard({
   return (
     <>
       <style jsx>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+        :global(*) { box-sizing: border-box; }
+        :global(html), :global(body) {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          min-width: 100%;
+        }
+        :global(body) {
+          background: #F2ECDC !important;
+          overflow-x: hidden;
+        }
 
         .dashboardRoot,
         .dashboardRoot * {
@@ -178,826 +191,448 @@ export default function Dashboard({
         }
 
         .dashboardRoot {
+          --maroon: #7A2035;
+          --maroon-deep: #4A1420;
+          --maroon-line: #9c3f52;
+          --parchment: #F2ECDC;
+          --parchment-dim: #E9E1CC;
+          --paper: #FBF9F3;
+          --ink: #2A211D;
+          --ink-soft: #6b5f57;
+          --brass: #B08A3E;
+          --brass-light: #d9c48d;
+          --rule: #d9cfb8;
+          --c-application: #8C2A3A;
+          --c-application-soft: #f7e6e6;
+          --c-academic: #23395F;
+          --c-academic-soft: #e5eaf2;
+          --c-reports: #5A2A63;
+          --c-reports-soft: #efe4f0;
+          --c-masters: #5A3A21;
+          --c-masters-soft: #f0e6d9;
+          --c-library: #205C3F;
+          --c-library-soft: #e2ede6;
           width: 100%;
-          padding-bottom: 32px;
+          min-width: 0;
+          min-height: 100vh;
+          margin: 0;
+          padding: 0 0 60px;
+          background: var(--parchment);
+          background-image: radial-gradient(circle at 1px 1px, rgba(122,32,53,0.05) 1px, transparent 0);
+          background-size: 22px 22px;
+          color: var(--ink);
         }
 
-        .pageIntro {
+        .heroWrap { padding: 34px 40px 0; }
+
+        .hero {
+          position: relative;
+          overflow: hidden;
+          padding: 34px 38px 42px;
+          border-radius: 14px;
+          background: linear-gradient(155deg, var(--maroon) 0%, var(--maroon-deep) 100%);
+          color: var(--parchment);
+        }
+
+        .hero::before {
+          content: "";
+          position: absolute;
+          right: -60px;
+          top: -60px;
+          width: 280px;
+          height: 280px;
+          border: 1px solid rgba(242,236,220,0.14);
+          border-radius: 50%;
+        }
+
+        .hero::after {
+          content: "";
+          position: absolute;
+          right: 10px;
+          top: 30px;
+          width: 190px;
+          height: 190px;
+          border: 1px solid rgba(242,236,220,0.1);
+          border-radius: 50%;
+        }
+
+        .heroTop {
+          position: relative;
+          z-index: 1;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 24px;
-          margin-bottom: 26px;
+          gap: 20px;
         }
 
-        .introBrand {
-          display: flex;
-          align-items: center;
-          gap: 49px;
-          min-width: 0;
-        }
-
-        .dashboardLogo {
-          display: block;
-          width: min(330px, 52vw);
-          height: auto;
-          object-fit: contain;
-          object-position: left center;
-        }
-
-        .introBrand .statCard {
-          width: 300px;
-          min-width: 300px;
-        }
-
-        .summaryCards {
-          display: flex;
-          align-items: stretch;
-          gap: 14px;
-          padding: 10px;
-          border: 1px solid #e2e2e2;
-          border-radius: 18px;
-          background: #f1f1f1;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-        }
-
-        .introBrand .statCard--books {
-          background: #fff;
-        }
-
-        .eyebrow {
-          margin-bottom: 7px;
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.13em;
-          text-transform: uppercase;
-        }
-
-        .pageIntro h1 {
+        .heroKicker {
           margin: 0;
-          color: #0f172a;
-          font-size: clamp(28px, 3vw, 38px);
-          line-height: 1.1;
-          letter-spacing: -0.035em;
-          font-weight: 800;
+          color: rgba(242,236,220,0.75);
+          font-size: 13px;
+          letter-spacing: 0.3px;
         }
 
-        .pageIntro p {
-          margin: 9px 0 0;
-          color: #64748b;
-          font-size: 14px;
-          line-height: 1.6;
-        }
-
-        .dateBox {
-          padding: 10px 14px;
-          border: 1px solid #dbe3ec;
-          border-radius: 12px;
-          background: #fff;
-          color: #111827;
-          box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
-          font-size: 12px;
-          font-weight: 700;
+        .dateTag {
+          padding: 9px 16px;
+          border: 1px solid rgba(242,236,220,0.3);
+          border-radius: 7px;
+          background: rgba(242,236,220,0.1);
+          color: var(--parchment);
+          font-size: 12.5px;
           white-space: nowrap;
         }
 
-        .errorBox {
-          margin-bottom: 18px;
-          padding: 12px 14px;
-          border: 1px solid #fecaca;
-          border-radius: 12px;
-          background: #fff7f7;
-          color: #b91c1c;
-          font-size: 13px;
-          font-weight: 600;
+        .heroStats {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          margin-top: 30px;
+          padding: 20px 30px;
+          border: 1px solid rgba(242,236,220,0.16);
+          border-radius: 10px;
+          background: rgba(251,249,243,0.06);
         }
 
-        .statsGrid {
-          display: grid;
-          grid-template-columns: 1fr;
-          margin-bottom: 32px;
+        .heroStat { flex: 1; padding: 0 26px; }
+        .heroStat + .heroStat { border-left: 1px solid rgba(242,236,220,0.22); }
+        .heroStatLabel { margin-bottom: 6px; font-size: 12.5px; color: rgba(242,236,220,0.72); }
+        .heroStatValue { display: flex; align-items: baseline; gap: 8px; color: var(--parchment); font-size: 32px; line-height: 1; font-weight: 600; }
+        .heroStatValue span { color: var(--brass-light); font-size: 13px; font-weight: 500; }
+
+        .moduleSearchWrap {
+          position: relative;
+          z-index: 2;
+          margin-top: -22px;
+          padding: 0 40px;
         }
 
         .moduleSearch {
           position: relative;
           display: flex;
           align-items: center;
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          box-shadow: none;
+          gap: 12px;
+          padding: 15px 20px;
+          border: 1px solid var(--rule);
+          border-radius: 11px;
+          background: var(--paper);
+          box-shadow: 0 10px 24px -14px rgba(74,20,32,0.35);
         }
 
         .moduleSearchIcon {
-          position: absolute;
-          top: 50%;
-          left: 16px;
           display: grid;
           place-items: center;
-          color: #475569;
-          transform: translateY(-50%);
-          pointer-events: none;
+          flex: none;
+          color: var(--ink-soft);
         }
 
         .moduleSearch input {
-          width: 100%;
-          height: 52px;
-          padding: 0 108px 0 48px;
-          border: 1px solid #111827;
-          border-radius: 13px;
-          outline: 0;
-          background: #f1f5f9;
-          color: #111827;
-          font-family: "Poppins", sans-serif;
+          flex: 1;
+          min-width: 0;
+          border: none;
+          outline: none;
+          background: transparent;
+          color: var(--ink);
           font-size: 14px;
-          font-weight: 600;
-          box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025);
-          transition: border-color 160ms ease, box-shadow 160ms ease;
         }
 
-        .moduleSearch input::placeholder { color: #94a3b8; font-weight: 500; }
-        .moduleSearch:focus-within { box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1); }
-        .moduleSearch input:focus { border-color: #111827; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025); }
+        .moduleSearch input::placeholder { color: #9a8f83; }
 
         .moduleSearchButton {
-          position: absolute;
-          top: 9px;
-          right: 9px;
-          display: grid;
-          place-items: center;
-          width: 38px;
-          height: 38px;
-          padding: 0;
-          border: 0;
-          border-radius: 10px;
-          background: #1e293b;
-          color: #fff;
-          font-family: "Poppins", sans-serif;
-          font-size: 11px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: background 160ms ease, transform 160ms ease;
-        }
-
-        .moduleSearchButton:hover { background: #0f172a; transform: translateY(-1px); }
-        .moduleSearchButton:active { transform: translateY(0); }
-
-        .statCard {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          min-height: 108px;
-          padding: 16px;
-          border: 1px solid #111827;
-          border-radius: 16px;
-          background: #fff;
-          box-shadow:
-            0 3px 0 rgba(15, 23, 42, 0.05),
-            0 10px 22px rgba(15, 23, 42, 0.07);
-          transition:
-            transform 160ms ease,
-            box-shadow 160ms ease;
-        }
-
-        .statCard:hover {
-          transform: translateY(-2px);
-          box-shadow:
-            0 4px 0 rgba(15, 23, 42, 0.05),
-            0 15px 28px rgba(15, 23, 42, 0.1);
-        }
-
-        .statIcon {
-          display: grid;
-          place-items: center;
-          flex: 0 0 auto;
-          width: 46px;
-          height: 46px;
-          border: 1px solid #d8e2ed;
-          border-radius: 13px;
-          background: #f8fafc;
-          color: #334155;
-        }
-
-        .statCard span {
-          display: block;
-          margin-bottom: 3px;
-          color: #64748b;
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        .statCard strong {
-          display: block;
-          color: #0f172a;
-          font-size: 25px;
-          line-height: 1.1;
-          font-weight: 800;
-        }
-
-        .statCard small {
-          display: block;
-          margin-top: 4px;
-          color: #94a3b8;
-          font-size: 11px;
-          font-weight: 600;
-        }
-
-        .modulesPanel {
-          padding: 22px;
-          border: 1px solid #dbe4ee;
-          border-radius: 0 0 20px 20px;
-          background: linear-gradient(145deg, #f8fafc, #eef2f7);
-          box-shadow:
-            0 3px 0 rgba(15, 23, 42, 0.03),
-            0 14px 34px rgba(15, 23, 42, 0.06);
-        }
-
-        .sectionTitle {
-          margin-bottom: 18px;
-        }
-
-        .sectionTitle h2 {
-          margin: 0;
-          color: #0f172a;
-          font-size: 20px;
-          line-height: 1.2;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-        }
-
-        .sectionTitle p {
-          margin: 5px 0 0;
-          color: #64748b;
-          font-size: 13px;
-        }
-
-        .moduleTabs {
-          display: flex;
-          align-items: stretch;
-          gap: 4px;
-          width: 100%;
-          margin: 0 0 -1px;
-          padding: 5px;
-          border: 1px solid #dbe3ed;
-          border-bottom: 0;
-          border-radius: 20px 20px 0 0;
-          background: rgba(248, 250, 252, 0.76);
-          position: relative;
-          z-index: 2;
-        }
-
-        .moduleTab {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 9px;
-          flex: 1 1 0;
-          min-width: 0;
-          min-height: 52px;
-          padding: 8px 13px;
-          border: 1px solid #111827;
-          border-radius: 13px;
-          background: #334155;
-          color: #fff;
-          font-family: "Poppins", sans-serif;
-          font-size: 15px;
-          font-weight: 700;
-          line-height: 1.15;
-          text-align: center;
-          white-space: normal;
+          width: 34px;
+          height: 34px;
+          flex: 0 0 34px;
+          padding: 0;
+          border: none;
+          border-radius: 7px;
+          background: var(--ink);
+          color: var(--paper);
           cursor: pointer;
-          transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
         }
 
-        .moduleTab:hover {
-          transform: translateY(-1px);
-          border-color: rgba(255, 255, 255, 0.65);
-          filter: brightness(0.9);
+        .moduleSearchButton:hover { background: #1c1714; }
+
+        .tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 28px 40px 16px;
         }
 
-        .moduleTab:focus-visible {
-          outline: 3px solid rgba(37, 99, 235, 0.22);
-          outline-offset: 2px;
-        }
-
-        .moduleTab--active {
-          border-color: #111827;
-          background: #1e293b;
-          color: #fff;
-          box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.36), inset 0 -1px 2px rgba(255, 255, 255, 0.08);
-          transform: translateY(2px);
-        }
-
-        .moduleTabIcon {
-          display: grid;
-          place-items: center;
-          flex: 0 0 auto;
-          color: #fff;
-        }
-
-        .moduleTab > span:nth-child(2) {
-          min-width: 0;
-          overflow-wrap: break-word;
-          word-break: normal;
-          white-space: normal;
-        }
-
-        .moduleTab--rose.moduleTab--active { border-color: #111827; background: #7f1d1d; color: #fff; }
-        .moduleTab--blue.moduleTab--active { border-color: #111827; background: #1e3a8a; color: #fff; }
-        .moduleTab--violet.moduleTab--active { border-color: #111827; background: #4c1d95; color: #fff; }
-        .moduleTab--amber.moduleTab--active { border-color: #111827; background: #92400e; color: #fff; }
-        .moduleTab--rose { background: #7a1414; }
-        .moduleTab--blue { background: #133285; }
-        .moduleTab--violet { background: #831991; }
-        .moduleTab--amber { background: #9d4a0b; }
-        .moduleTab--green { background: #0d5126; }
-        .moduleTab--green.moduleTab--active { border-color: #0e131e; background: #166534; color: #fff; }
-
-        .moduleSearchResult {
-          margin: -8px 0 18px;
-          color: #64748b;
-          font-size: 12px;
+        .tab {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 11px 18px;
+          border: none;
+          border-radius: 9px;
+          color: var(--paper);
+          box-shadow: 0 3px 0 rgba(0,0,0,0.22);
+          font-size: 13.5px;
           font-weight: 600;
-          text-align: center;
+          cursor: pointer;
+          transition: box-shadow .12s ease, transform .12s ease, filter .12s ease;
         }
 
-        .emptyModules {
-          padding: 34px 20px;
-          border: 1px dashed #cbd5e1;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.45);
-          color: #64748b;
-          font-size: 13px;
+        .tabIcon { display: grid; place-items: center; }
+        .tab:hover { filter: brightness(1.08); }
+        .tabActive { box-shadow: inset 0 2px 5px rgba(0,0,0,0.4); transform: translateY(2px); filter: brightness(0.86); }
+        .tabActive:hover { filter: brightness(0.86); }
+        .tabApplication { background: var(--c-application); }
+        .tabAcademic { background: var(--c-academic); }
+        .tabReports { background: var(--c-reports); }
+        .tabMasters { background: var(--c-masters); }
+        .tabLibrary { background: var(--c-library); }
+
+        .directory {
+          margin: 0 40px 60px;
+          padding: 30px 38px 40px;
+          border: 1px solid var(--rule);
+          border-radius: 0 0 14px 14px;
+          background: var(--paper);
+        }
+
+        .directoryHead h2 {
+          margin: 0 0 6px;
+          color: var(--ink);
+          font-size: 22px;
           font-weight: 600;
-          text-align: center;
+        }
+
+        .directoryHead p {
+          margin: 0 0 26px;
+          color: var(--ink-soft);
+          font-size: 13.5px;
         }
 
         .moduleGrid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 17px;
+          gap: 18px;
         }
 
-        .moduleButtonWrap {
-          min-width: 0;
-        }
+        .moduleButtonWrap { min-width: 0; }
 
         .moduleButtonWrap :global(.moduleCard) {
           position: relative;
           display: flex;
-          flex-direction: row;
-          align-items: center;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: flex-start;
           width: 100%;
-          min-height: 132px;
-          padding: 18px 18px 18px 20px;
-          gap: 16px;
-          overflow: hidden;
-          border: 1px solid #111827;
-          border-radius: 14px;
-          background: var(--module-bg);
-          color: #172033;
+          min-height: 180px;
+          padding: 22px 22px 24px;
+          border: 1px solid var(--rule);
+          border-left-width: 4px;
+          border-left-color: var(--module-accent, var(--c-application));
+          border-radius: 8px;
+          background: var(--module-soft, var(--paper));
+          color: var(--ink);
           text-align: left;
           cursor: pointer;
-          box-shadow:
-            0 5px 0 #64748b,
-            0 12px 24px rgba(15, 23, 42, 0.08);
-          transition:
-            transform 150ms ease,
-            box-shadow 150ms ease,
-            background 150ms ease;
-        }
-
-        .moduleButtonWrap :global(.moduleCard)::before {
-          content: "";
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 5px;
-          background: var(--module-accent);
-          border-radius: 14px 0 0 14px;
+          box-shadow: none;
+          transition: transform .15s ease, box-shadow .15s ease;
         }
 
         .moduleButtonWrap :global(.moduleCard:hover) {
           transform: translateY(-3px);
-          background: var(--module-bg);
-          box-shadow:
-            0 7px 0 #64748b,
-            0 18px 30px rgba(15, 23, 42, 0.11);
+          background: var(--module-soft, var(--paper));
+          box-shadow: 0 14px 26px -18px rgba(42,33,29,0.35);
         }
 
-        .moduleButtonWrap :global(.moduleCard:active) {
-          transform: translateY(2px);
-          box-shadow:
-            0 2px 0 #64748b,
-            0 7px 13px rgba(15, 23, 42, 0.08);
-        }
+        .moduleButtonWrap :global(.moduleCard:active) { transform: translateY(0); }
+        .moduleButtonWrap :global(.moduleCard:focus-visible) { outline: 2px solid var(--module-accent); outline-offset: 3px; }
 
-        .moduleButtonWrap :global(.moduleCard:focus-visible) {
-          outline: 2px solid var(--module-accent);
-          outline-offset: 3px;
-        }
+        .moduleButtonWrap :global(.moduleCard::before) { display: none; }
 
         .moduleButtonWrap :global(.moduleCardIcon) {
           position: relative;
-          z-index: 1;
-          display: grid;
-          place-items: center;
-          flex: 0 0 auto;
-          width: 58px;
-          height: 58px;
-          border: 1px solid var(--module-icon-border);
-          border-radius: 12px;
-          background: var(--module-icon-bg);
-          color: var(--module-icon-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          margin-bottom: 14px;
+          border: none;
+          border-radius: 8px;
+          background: var(--paper);
+          color: var(--module-accent);
           box-shadow: none;
+          flex: 0 0 auto;
         }
 
-        .moduleButtonWrap :global(.moduleCardIcon svg) {
-          width: 30px;
-          height: 30px;
-        }
+        .moduleButtonWrap :global(.moduleCardIcon svg) { width: 18px; height: 18px; }
 
         .moduleButtonWrap :global(.moduleCardContent) {
           position: relative;
-          z-index: 1;
-          width: auto;
+          width: 100%;
           min-width: 0;
-          flex: 1;
+          flex: none;
         }
 
         .moduleButtonWrap :global(.moduleCardContent h3) {
-          margin: 0;
-          color: #111827;
-          font-size: 18px;
-          line-height: 1.25;
-          font-weight: 800;
-          letter-spacing: -0.02em;
+          margin: 0 0 6px;
+          color: var(--ink);
+          font-size: 16.5px;
+          line-height: 1.3;
+          font-weight: 600;
+          letter-spacing: 0;
         }
 
         .moduleButtonWrap :global(.moduleCardContent p) {
-          display: -webkit-box;
-          margin: 5px 0 0;
+          display: block;
+          margin: 0;
           max-width: 100%;
-          overflow: hidden;
-          color: #64748b;
+          overflow: visible;
+          color: var(--ink-soft);
           font-size: 13px;
           line-height: 1.5;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
+          -webkit-line-clamp: unset;
         }
 
-        .moduleButtonWrap :global(.moduleCardArrow) {
-          display: none !important;
+        .moduleButtonWrap :global(.moduleCardArrow) { display: none !important; }
+
+        .moduleButtonWrap :global(.moduleCard--attendance) { --module-accent: #2563eb; --module-soft: #e5eaf2; }
+        .moduleButtonWrap :global(.moduleCard--reports) { --module-accent: #5A2A63; --module-soft: #efe4f0; }
+        .moduleButtonWrap :global(.moduleCard--students) { --module-accent: #205C3F; --module-soft: #e2ede6; }
+        .moduleButtonWrap :global(.moduleCard--admission) { --module-accent: #8C2A3A; --module-soft: #f7e6e6; }
+        .moduleButtonWrap :global(.moduleCard--fee-management) { --module-accent: #5A3A21; --module-soft: #f0e6d9; }
+        .moduleButtonWrap :global(.moduleCard--announcements) { --module-accent: #B08A3E; --module-soft: #f0e6d9; }
+        .moduleButtonWrap :global(.moduleCard--timetable) { --module-accent: #23395F; --module-soft: #e5eaf2; }
+        .moduleButtonWrap :global(.moduleCard--syllabus) { --module-accent: #205C3F; --module-soft: #e2ede6; }
+        .moduleButtonWrap :global(.moduleCard--doubts) { --module-accent: #8C2A3A; --module-soft: #f7e6e6; }
+        .moduleButtonWrap :global(.moduleCard--library) { --module-accent: #205C3F; --module-soft: #e2ede6; }
+        .moduleButtonWrap :global(.moduleCard--online-class) { --module-accent: #23395F; --module-soft: #e5eaf2; }
+        .moduleButtonWrap :global(.moduleCard--leave) { --module-accent: #205C3F; --module-soft: #e2ede6; }
+        .moduleButtonWrap :global(.moduleCard--staff) { --module-accent: #5A2A63; --module-soft: #efe4f0; }
+        .moduleButtonWrap :global(.moduleCard--internal-marks) { --module-accent: #23395F; --module-soft: #e5eaf2; }
+        .moduleButtonWrap :global(.moduleCard--monthly-report) { --module-accent: #5A2A63; --module-soft: #efe4f0; }
+
+        .errorBox {
+          margin: 18px 40px 0;
+          padding: 12px 14px;
+          border: 1px solid #d8a4aa;
+          border-radius: 8px;
+          background: #fff6f6;
+          color: var(--maroon);
+          font-size: 13px;
+          font-weight: 600;
         }
 
-        .moduleButtonWrap :global(.moduleCard--attendance) {
-          --module-bg: #f5f9ff;
-          --module-accent: #2563eb;
-          --module-icon-bg: #eff6ff;
-          --module-icon-border: #bfdbfe;
-          --module-icon-color: #2563eb;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--reports) {
-          --module-bg: #faf7ff;
-          --module-accent: #7c3aed;
-          --module-icon-bg: #f5f3ff;
-          --module-icon-border: #ddd6fe;
-          --module-icon-color: #7c3aed;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--students) {
-          --module-bg: #f4fbf8;
-          --module-accent: #059669;
-          --module-icon-bg: #ecfdf5;
-          --module-icon-border: #a7f3d0;
-          --module-icon-color: #059669;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--admission) {
-          --module-bg: #fff5f7;
-          --module-accent: #e11d48;
-          --module-icon-bg: #fff1f2;
-          --module-icon-border: #fecdd3;
-          --module-icon-color: #e11d48;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--fee-management) {
-          --module-bg: #fffaf0;
-          --module-accent: #d97706;
-          --module-icon-bg: #fffbeb;
-          --module-icon-border: #fde68a;
-          --module-icon-color: #d97706;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--announcements) {
-          --module-bg: #fffaf0;
-          --module-accent: #d97706;
-          --module-icon-bg: #fffbeb;
-          --module-icon-border: #fde68a;
-          --module-icon-color: #d97706;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--timetable) {
-          --module-bg: #f3fbfc;
-          --module-accent: #0891b2;
-          --module-icon-bg: #ecfeff;
-          --module-icon-border: #a5f3fc;
-          --module-icon-color: #0891b2;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--syllabus) {
-          --module-bg: #f5fbf6;
-          --module-accent: #16a34a;
-          --module-icon-bg: #f0fdf4;
-          --module-icon-border: #bbf7d0;
-          --module-icon-color: #16a34a;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--doubts) {
-          --module-bg: #fff6f8;
-          --module-accent: #db2777;
-          --module-icon-bg: #fdf2f8;
-          --module-icon-border: #fbcfe8;
-          --module-icon-color: #db2777;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--library) {
-          --module-bg: #f5f7ff;
-          --module-accent: #4f46e5;
-          --module-icon-bg: #eef2ff;
-          --module-icon-border: #c7d2fe;
-          --module-icon-color: #4f46e5;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--online-class) {
-          --module-bg: #f4f9ff;
-          --module-accent: #2563eb;
-          --module-icon-bg: #eff6ff;
-          --module-icon-border: #bfdbfe;
-          --module-icon-color: #2563eb;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--leave) {
-          --module-bg: #f8fcf7;
-          --module-accent: #059669;
-          --module-icon-bg: #ecfdf5;
-          --module-icon-border: #a7f3d0;
-          --module-icon-color: #059669;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--staff) {
-          --module-bg: #f8f6ff;
-          --module-accent: #7c3aed;
-          --module-icon-bg: #f5f3ff;
-          --module-icon-border: #ddd6fe;
-          --module-icon-color: #7c3aed;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--internal-marks) {
-          --module-bg: #f3f9ff;
-          --module-accent: #0369a1;
-          --module-icon-bg: #eff6ff;
-          --module-icon-border: #bfdbfe;
-          --module-icon-color: #0369a1;
-        }
-
-        .moduleButtonWrap :global(.moduleCard--monthly-report) {
-          --module-bg: #f8f6ff;
-          --module-accent: #7c3aed;
-          --module-icon-bg: #f5f3ff;
-          --module-icon-border: #ddd6fe;
-          --module-icon-color: #7c3aed;
+        .emptyModules {
+          grid-column: 1 / -1;
+          padding: 34px 20px;
+          border: 1px dashed var(--rule);
+          border-radius: 8px;
+          background: var(--paper);
+          color: var(--ink-soft);
+          font-size: 13px;
+          font-weight: 600;
+          text-align: center;
         }
 
         @media (max-width: 1050px) {
-          .moduleGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
+          .moduleGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
-        @media (max-width: 720px) {
-          .pageIntro {
-            align-items: flex-start;
-            flex-direction: column;
-          }
+        @media (max-width: 880px) {
+          .heroWrap, .moduleSearchWrap, .tabs { padding-left: 20px; padding-right: 20px; }
+          .directory { margin-left: 20px; margin-right: 20px; }
+          .heroStats { flex-direction: column; gap: 14px; }
+          .heroStat + .heroStat { border-left: none; border-top: 1px solid rgba(242,236,220,0.22); padding-top: 14px; }
+          .heroTop { flex-wrap: wrap; }
+        }
 
-          .introBrand {
-            width: 100%;
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 14px;
-          }
-
-          .summaryCards {
-            width: 100%;
-            flex-direction: column;
-          }
-
-          .introBrand .statCard {
-            width: 100%;
-            min-width: 0;
-          }
-
-          .dashboardLogo {
-            width: min(280px, 80vw);
-          }
-
-          .dateBox {
-            white-space: normal;
-          }
-
-          .statsGrid {
-            grid-template-columns: 1fr;
-          }
-
-          /*
-           * Keep module cards 2 per row on mobile.
-           */
-          .moduleGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 17px;
-          }
-
-          .modulesPanel {
-            padding: 16px;
-            border-radius: 16px;
-          }
-
-          .moduleTabs {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 5px;
-            width: 100%;
-            margin: 0 0 -1px;
-            border-radius: 16px 16px 0 0;
-          }
-
-          .moduleTab {
-            min-height: 47px;
-            padding: 7px 8px;
-            font-size: 13px;
-          }
-
-          .moduleButtonWrap :global(.moduleCard) {
-            min-height: 118px;
-            padding: 14px;
-            gap: 11px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardIcon) {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardIcon svg) {
-            width: 23px;
-            height: 23px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardContent h3) {
-            font-size: 14px;
-            line-height: 1.25;
-          }
-
-          .moduleButtonWrap :global(.moduleCardContent p) {
-            margin-top: 4px;
-            font-size: 11px;
-            line-height: 1.4;
-          }
+        @media (max-width: 640px) {
+          .moduleGrid { grid-template-columns: 1fr; }
+          .hero { padding: 28px 22px 30px; }
+          .directory { padding: 24px 20px 30px; }
+          .tabs { gap: 6px; }
+          .tab { flex: 1 1 calc(50% - 6px); justify-content: center; padding: 10px 12px; }
         }
 
         @media (max-width: 420px) {
-          .moduleTabs {
-            grid-template-columns: 1fr;
-          }
-
-          .moduleTab {
-            min-height: 43px;
-            font-size: 12px;
-          }
-
-          .moduleGrid {
-            gap: 17px;
-          }
-
-          .moduleButtonWrap :global(.moduleCard) {
-            min-height: 112px;
-            padding: 12px;
-            gap: 9px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardIcon) {
-            width: 40px;
-            height: 40px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardIcon svg) {
-            width: 21px;
-            height: 21px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardContent h3) {
-            font-size: 13px;
-          }
-
-          .moduleButtonWrap :global(.moduleCardContent p) {
-            font-size: 10px;
-          }
+          .heroWrap { padding-top: 20px; }
+          .moduleSearchWrap { margin-top: -14px; }
+          .tab { flex-basis: 100%; }
+          .moduleButtonWrap :global(.moduleCard) { min-height: 160px; }
         }
       `}</style>
 
       <main className="dashboardRoot">
-        <section className="pageIntro">
-          <div className="introBrand">
-            <img
-              className="dashboardLogo"
-              src="/icons/college-logo.png"
-              alt="Royal College of Arts and Science Thrithala"
-            />
-            <div className="summaryCards">
-              <div className="statCard">
-                <div className="statIcon">
-                  <Icon name="users" size={21} />
-                </div>
-                <div>
-                  <span>Total Students</span>
-                  <strong>{loadingStudents ? "—" : totalStudents.toLocaleString()}</strong>
-                  <small>Registered students</small>
+        <div className="heroWrap">
+          <section className="hero">
+            <div className="heroTop">
+              <p className="heroKicker">Registrar's overview</p>
+              <div className="dateTag">{displayDate}</div>
+            </div>
+
+            <div className="heroStats">
+              <div className="heroStat">
+                <div className="heroStatLabel">Registered students</div>
+                <div className="heroStatValue">
+                  {loadingStudents ? "—" : totalStudents.toLocaleString()}
+                  <span>on roll this term</span>
                 </div>
               </div>
-              <div className="statCard statCard--books">
-                <div className="statIcon">
-                  <Icon name="library" size={21} />
+
+              <div className="heroStat">
+                <div className="heroStatLabel">Library holdings</div>
+                <div className="heroStatValue">
+                  {loadingBooks ? "—" : totalBooks.toLocaleString()}
+                  <span>catalogued title{totalBooks === 1 ? "" : "s"}</span>
                 </div>
-                <div>
-                  <span>Total Books</span>
-                  <strong>{loadingBooks ? "—" : totalBooks.toLocaleString()}</strong>
-                  <small>Library books</small>
+              </div>
+
+              <div className="heroStat">
+                <div className="heroStatLabel">Available modules</div>
+                <div className="heroStatValue">
+                  {visibleModules.length}
+                  <span>accessible to you</span>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="dateBox">{displayDate}</div>
-        </section>
+          </section>
+        </div>
 
         {error && <div className="errorBox">{error}</div>}
 
-        <section className="statsGrid">
-          <label className="moduleSearch">
-            <span className="moduleSearchIcon"><Icon name="search" size={20} /></span>
-            <input
-              type="search"
-              value={moduleSearch}
-              onChange={(event) => setModuleSearch(event.target.value)}
-              placeholder="Search modules..."
-              aria-label="Search dashboard modules"
-            />
-            <button
-              type="button"
-              className="moduleSearchButton"
-              onClick={() => setModuleSearch((value) => value.trim())}
-              aria-label="Search modules"
-            >
-              <Icon name="search" size={16} />
-            </button>
-          </label>
-        </section>
+        <nav className="tabs" role="tablist" aria-label="Application module categories">
+          {moduleTabs.map((tab) => {
+            const toneClass =
+              tab.tone === "rose" ? "tabApplication" :
+              tab.tone === "blue" ? "tabAcademic" :
+              tab.tone === "violet" ? "tabReports" :
+              tab.tone === "amber" ? "tabMasters" :
+              "tabLibrary";
 
-        <div className="moduleTabs" role="tablist" aria-label="Application module categories">
-          {moduleTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              className={`moduleTab moduleTab--${tab.tone}${activeTab === tab.id ? " moduleTab--active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="moduleTabIcon"><Icon name={tab.icon} size={20} /></span>
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`tab ${toneClass}${activeTab === tab.id ? " tabActive" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span className="tabIcon"><Icon name={tab.icon} size={15} /></span>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-        <section className="modulesPanel">
-          <section className="sectionTitle">
-            <div>
-              <h2>{normalizedSearch ? "Search Results" : "Application Modules"}</h2>
-
-              <p>
-                {normalizedSearch
-                  ? `${selectedModules.length} matching module${selectedModules.length === 1 ? "" : "s"}`
-                  : "Open a module to manage its data and controls."}
-              </p>
-            </div>
-          </section>
+        <section className="directory">
+          <div className="directoryHead">
+            <h2>{normalizedSearch ? "Search Results" : "Application Modules"}</h2>
+            <p>
+              {normalizedSearch
+                ? `${selectedModules.length} matching module${selectedModules.length === 1 ? "" : "s"}`
+                : "Open a module to manage its records and workflow."}
+            </p>
+          </div>
 
           <section className="moduleGrid">
             {selectedModules.length ? selectedModules.map((module) => (
